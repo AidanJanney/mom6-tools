@@ -1,0 +1,166 @@
+"MOM6 diagnostic fields table for CESM case: carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM"
+1 1 1 0 0 0
+### Section-1: File List
+#========================
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo",                      1,  "months", 1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo",                           1,  "months", 1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo",                         1,  "days",   1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo",                         1,  "days",   1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo",                      1,  "days",   1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo",                         1,  "days",   1, "days",   "time", 1, "months"
+"carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static",                               -1, "days",   1, "days",   "time"
+
+### Section-2: Fields List
+#=========================
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo"
+"ocean_model", "soga",         "soga",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "thetaoga",     "thetaoga",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "uh",           "uh",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vh",           "vh",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vhbt",         "vhbt",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "uhbt",         "uhbt",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "agessc",       "agessc",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_ady_2d",     "T_ady_2d",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_adx_2d",     "T_adx_2d",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_diffy_2d",   "T_diffy_2d",   "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_diffx_2d",   "T_diffx_2d",   "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_hbd_diffx_2d","T_hbd_diffx_2d","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "T_hbd_diffy_2d","T_hbd_diffy_2d","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "diftrelo",     "diftrelo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "diftrblo",     "diftrblo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "difmxybo",     "difmxybo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "difmxylo",     "difmxylo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "volcello",     "volcello",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vmo",          "vmo",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vhGM",         "vhGM",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vhml",         "vhml",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "umo",          "umo",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "uhGM",         "uhGM",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "uhml",         "uhml",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "uo",           "uo",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vo",           "vo",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "h",            "h",            "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "e",            "e",            "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "thetao",       "thetao",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "so",           "so",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "KE",           "KE",           "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "rhopot0",      "rhopot0",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "KPP_OBLdepth", "oml",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "tauuo",        "tauuo",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "tauvo",        "tauvo",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "friver",       "friver",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "prsn",         "prsn",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "prlq",         "prlq",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "evs",          "evs",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hfsso",        "hfsso",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "rlntds",       "rlntds",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hfsnthermds",  "hfsnthermds",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "sfdsi",        "sfdsi",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "rsntds",       "rsntds",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hfds",         "hfds",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "ustar",        "ustar",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hfsifrazil",   "hfsifrazil",   "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "wfo",          "wfo",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "vprec",        "vprec",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "ficeberg",     "ficeberg",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "fsitherm",     "fsitherm",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hflso",        "hflso",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "pso",          "pso",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "seaice_melt_heat","seaice_melt_heat","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "Heat_PmE",     "Heat_PmE",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "salt_flux_added","salt_flux_added","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_lrunoff","heat_content_lrunoff","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_frunoff","heat_content_frunoff","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_lprec","heat_content_lprec","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_fprec","heat_content_fprec","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_vprec","heat_content_vprec","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_cond","heat_content_cond","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "heat_content_evap","heat_content_evap","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSH",          "SSH",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "tos",          "tos",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "sos",          "sos",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSU",          "SSU",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSV",          "SSV",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "mass_wt",      "mass_wt",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "opottempmint", "opottempmint", "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "somint",       "somint",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "Rd_dx",        "Rd_dx",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "speed",        "speed",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "mlotst",       "mlotst",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.native%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo"
+"ocean_model_z", "uo",      "uo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "vo",      "vo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "h",       "h",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "thetao",  "thetao",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "so",      "so",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "agessc",  "agessc",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "rhopot0", "rhopot0", "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "N2_int",  "N2_int",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "volcello","volcello","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "vmo",     "vmo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "vhGM",    "vhGM",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "vhml",    "vhml",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "umo",     "umo",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "uhGM",    "uhGM",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "uhml",    "uhml",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.z%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo"
+"ocean_model", "lrunoff",      "lrunoff",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSH",          "SSH",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "tos",          "tos",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "sos",          "sos",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSU",          "SSU",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "SSV",          "SSV",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "mass_wt",      "mass_wt",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "opottempmint", "opottempmint", "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "somint",       "somint",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "Rd_dx",        "Rd_dx",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "speed",        "speed",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "mlotst",       "mlotst",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "KPP_OBLdepth", "oml",          "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.sfc%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo"
+"ocean_model", "tauuo",        "tauuo",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "tauvo",        "tauvo",        "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "hfds",         "hfds",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "friver",       "friver",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "evs",       "evs",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "pso",       "pso",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model", "wfo",       "wfo",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.atm%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo"
+"ocean_model_glorys", "uo",      "uo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_glorys", "vo",      "vo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_glorys", "thetao",  "thetao",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_glorys", "so",      "so",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_glorys", "volcello","volcello","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.glorys%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo"
+"ocean_model_z", "uo",      "uo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "vo",      "vo",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "thetao",  "thetao",  "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "so",      "so",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo", "all", "mean", "none", 2
+"ocean_model_z", "volcello","volcello","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.woa%4yr-%2mo", "all", "mean", "none", 2
+
+# "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static"
+"ocean_model", "geolon",      "geolon",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolat",      "geolat",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolon_c",    "geolon_c",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolat_c",    "geolat_c",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolon_u",    "geolon_u",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolat_u",    "geolat_u",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolon_v",    "geolon_v",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "geolat_v",    "geolat_v",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "deptho",      "deptho",      "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "wet",         "wet",         "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "wet_c",       "wet_c",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "wet_u",       "wet_u",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "wet_v",       "wet_v",       "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "Coriolis",    "Coriolis",    "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "areacello",   "areacello",   "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "areacello_cu","areacello_cu","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "areacello_cv","areacello_cv","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "areacello_bu","areacello_bu","carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "sin_rot",     "sin_rot",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2
+"ocean_model", "cos_rot",     "cos_rot",     "carib12_runoff_tides_rmax600_f200_gioGlofas_gioNNSM.mom6.h.static", "all", ".false.", "none", 2

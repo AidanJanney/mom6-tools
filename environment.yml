@@ -38,4 +38,7 @@ dependencies:
     - momlevel @ git+https://github.com/jkrasting/momlevel
     - xwavelet @ git+https://github.com/jkrasting/xwavelet
     - papermill
+    # mom6-diagtables is a standalone subpackage (packages/mom6-diagtables); it is
+    # installed editable so it can be developed independently of mom6-tools.
+    - -e ./packages/mom6-diagtables
     - -e .
