@@ -20,16 +20,18 @@ __all__ = ["DiagFile", "DiagField", "DiagTable"]
 class DiagFile:
     """One output-file definition from the file-list section.
 
-    The first six attributes are required by the diag_table format; the rest are optional
-    and control when a new physical file is started.
+    ``file_name``, ``output_freq``, ``output_freq_units``, ``time_axis_units``, and
+    ``time_axis_name`` are required.  ``file_format`` has a default of 1 (netCDF) because
+    the YAML format does not include it.  The remaining attributes are optional and control
+    when a new physical file is started.
     """
 
     file_name: str
     output_freq: int
     output_freq_units: str
-    file_format: int
     time_axis_units: str
     time_axis_name: str
+    file_format: int = 1
     new_file_freq: Optional[int] = None
     new_file_freq_units: Optional[str] = None
     start_time: Optional[str] = None
@@ -49,16 +51,20 @@ class DiagField:
     ``regional_section`` is ``"none"`` for global output or six space-separated numbers
     (``lon_min lon_max lat_min lat_max vert_min vert_max``) for a sub-domain.  Values are
     stored verbatim as strings; this class does not validate or restrict them.
+
+    ``time_sampling`` and ``packing`` are optional because the YAML format omits them
+    (``time_sampling`` was removed in the modern diag_manager; ``packing``/``kind`` may be
+    inherited from the file level).
     """
 
     module_name: str
     field_name: str
     output_name: str
     file_name: str
-    time_sampling: str
     reduction_method: str
-    regional_section: str
-    packing: int
+    regional_section: str = "none"
+    time_sampling: str = "1"
+    packing: Optional[int] = None
 
 
 @dataclass
@@ -83,12 +89,32 @@ class DiagTable:
                 return f
         return None
 
-    def streams(self) -> Dict[str, DiagFile]:
-        """Map each stream name to its :class:`DiagFile`.
+    def streams(self) -> Dict[str, "DiagFile"]:
+        """Map each stream name to its :class:`DiagFile` using :func:`stream_from_prefix`.
+
+        Stream names are derived from the CESM ``<case>.mom6.h.<stream>`` convention.
+        For non-standard naming conventions use :meth:`infer_streams` instead.
 
         If two files share a stream name (unusual) the last one wins.
         """
         return {f.stream: f for f in self.files}
+
+    def infer_streams(self) -> Dict[str, "DiagFile"]:
+        """Map each stream name to its :class:`DiagFile` using auto-detection.
+
+        Finds the longest common prefix shared by all file names and strips it to
+        produce stream names.  Works for both the CESM convention and non-standard
+        conventions such as BGC output (e.g. ``ocean_cobalt_sfc``, ``ocean_cobalt_btm``
+        → streams ``sfc``, ``btm``).  Falls back gracefully to the full base name when
+        no common prefix is found.
+
+        Use this instead of :meth:`streams` when the diag_table does not follow the
+        ``.mom6.h.<stream>`` pattern.
+        """
+        from .prefix import infer_stream_names
+        name_to_prefix = infer_stream_names([f.file_name for f in self.files])
+        prefix_to_file = {f.file_name: f for f in self.files}
+        return {stream: prefix_to_file[prefix] for stream, prefix in name_to_prefix.items()}
 
     def fields_for(self, file_name: str) -> List[DiagField]:
         """All fields written to ``file_name``."""

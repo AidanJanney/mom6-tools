@@ -155,7 +155,7 @@ class DataSource:
             outdir = os.path.dirname(os.path.abspath(diag_table_path))
         streams = {
             stream: prefix_to_glob(dfile.file_name)
-            for stream, dfile in table.streams().items()
+            for stream, dfile in table.infer_streams().items()
         }
         return cls(
             casename=casename,

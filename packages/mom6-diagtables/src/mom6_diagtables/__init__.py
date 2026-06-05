@@ -7,19 +7,22 @@ Typical use::
     print(table.streams())
 """
 
-from .models import DiagField, DiagFile, DiagTable
+from .table import DiagField, DiagFile, DiagTable
 from .parser import parse_diag_table, parse_diag_table_string
-from .prefix import prefix_to_glob, prefix_to_regex, stream_from_prefix
+from .parser_yaml import parse_diag_table_yaml
+from .prefix import infer_stream_names, prefix_to_glob, prefix_to_regex, stream_from_prefix
 
 __version__ = "0.1.0"
 
 __all__ = [
     "parse_diag_table",
     "parse_diag_table_string",
+    "parse_diag_table_yaml",
     "DiagTable",
     "DiagFile",
     "DiagField",
     "stream_from_prefix",
+    "infer_stream_names",
     "prefix_to_regex",
     "prefix_to_glob",
 ]

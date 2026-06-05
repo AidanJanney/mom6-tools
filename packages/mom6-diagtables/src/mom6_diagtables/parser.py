@@ -1,4 +1,4 @@
-"""Parse a MOM6/FMS diag_table text file into a :class:`~mom6_diagtables.models.DiagTable`.
+"""Parse a MOM6/FMS diag_table text file into a :class:`~mom6_diagtables.table.DiagTable`.
 
 The diag_table is read as comma-separated values (strings are double-quoted and may
 contain spaces, e.g. a regional section ``"20.1 20.1 -69.8 -34.6 -1 -1"``), so we split on
@@ -18,13 +18,20 @@ import csv
 import io
 from typing import List, Optional
 
-from .models import DiagField, DiagFile, DiagTable
+from .table import DiagField, DiagFile, DiagTable
 
 __all__ = ["parse_diag_table", "parse_diag_table_string"]
 
 
 def parse_diag_table(path) -> DiagTable:
-    """Parse the diag_table at ``path`` and return a :class:`DiagTable`."""
+    """Parse the diag_table at ``path`` and return a :class:`DiagTable`.
+
+    The format is detected automatically: files ending in ``.yaml`` or ``.yml`` are
+    parsed as YAML; everything else is parsed as ASCII.
+    """
+    if _is_yaml_path(path):
+        from .parser_yaml import parse_diag_table_yaml
+        return parse_diag_table_yaml(path)
     with open(path, "r") as fh:
         return parse_diag_table_string(fh.read())
 
@@ -137,3 +144,7 @@ def _make_field(cols: List[str]) -> DiagField:
         regional_section=cols[6],
         packing=int(cols[7]),
     )
+
+
+def _is_yaml_path(path) -> bool:
+    return str(path).endswith((".yaml", ".yml"))

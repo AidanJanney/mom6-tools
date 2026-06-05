@@ -1,13 +1,18 @@
 """Command-line interface for mom6-diagtables.
 
-    mom6-diagtables inspect <diag_table>     # summarize files, fields, and streams
-    mom6-diagtables validate <diag_table>    # exit non-zero if it cannot be parsed
+    mom6-diagtables inspect  <path>   # summarize files, fields, and streams
+    mom6-diagtables validate <path>   # exit non-zero if it cannot be parsed (ASCII or YAML)
+    mom6-diagtables convert  <path>   # convert legacy ASCII diag_table to YAML
 """
 
 import argparse
+import subprocess
 import sys
+from pathlib import Path
 
 from .parser import parse_diag_table
+
+_FMS_TOOLS = Path(__file__).parent / "fms_yaml_tools"
 
 
 def _inspect(path: str) -> int:
@@ -34,23 +39,35 @@ def _validate(path: str) -> int:
     return 0
 
 
+def _convert(path: str) -> int:
+    """Convert a legacy ASCII diag_table to YAML using the bundled FMS tool."""
+    script = _FMS_TOOLS / "diag_table_to_yaml.py"
+    result = subprocess.run([sys.executable, str(script), "-f", path])
+    return result.returncode
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="mom6-diagtables", description="Read and inspect MOM6 diag_table files."
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_inspect = sub.add_parser("inspect", help="Summarize a diag_table.")
+    p_inspect = sub.add_parser("inspect", help="Summarize a diag_table (ASCII or YAML).")
     p_inspect.add_argument("path", help="Path to a diag_table file.")
 
-    p_validate = sub.add_parser("validate", help="Check that a diag_table parses.")
+    p_validate = sub.add_parser("validate", help="Check that a diag_table parses (ASCII or YAML).")
     p_validate.add_argument("path", help="Path to a diag_table file.")
+
+    p_convert = sub.add_parser("convert", help="Convert a legacy ASCII diag_table to YAML.")
+    p_convert.add_argument("path", help="Path to the ASCII diag_table to convert.")
 
     args = parser.parse_args(argv)
     if args.command == "inspect":
         return _inspect(args.path)
     if args.command == "validate":
         return _validate(args.path)
+    if args.command == "convert":
+        return _convert(args.path)
     return 2  # unreachable: subcommand is required
 
 

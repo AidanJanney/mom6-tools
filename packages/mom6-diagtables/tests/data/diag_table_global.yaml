@@ -1,0 +1,86 @@
+title: "MOM6 diagnostic fields table (YAML)"
+base_date: "1 1 1 0 0 0"
+diag_files:
+
+  - file_name: case.mom6.h.z%4yr-%2mo
+    freq: 1
+    freq_units: months
+    time_units: days
+    unlimdim: time
+    new_file_freq: 1
+    new_file_freq_units: months
+    varlist:
+      - var_name: thetao
+        module: ocean_model
+        reduction: average
+        kind: r4
+      - var_name: so
+        module: ocean_model
+        reduction: average
+        kind: r4
+      - var_name: uo
+        out_name: u
+        module: ocean_model
+        reduction: average
+        kind: r4
+
+  - file_name: case.mom6.h.native%4yr-%2mo
+    freq: 1
+    freq_units: months
+    time_units: days
+    unlimdim: time
+    new_file_freq: 1
+    new_file_freq_units: months
+    varlist:
+      - var_name: soga
+        module: ocean_model
+        reduction: average
+        kind: r4
+      - var_name: thetaoga
+        module: ocean_model
+        reduction: average
+        kind: r4
+
+  - file_name: case.mom6.h.sfc%4yr-%2mo
+    freq: 1
+    freq_units: months
+    time_units: days
+    unlimdim: time
+    new_file_freq: 1
+    new_file_freq_units: months
+    varlist:
+      - var_name: SSH
+        module: ocean_model
+        reduction: average
+        kind: r4
+
+  - file_name: case.mom6.h.static
+    freq: -1
+    freq_units: days
+    time_units: days
+    unlimdim: time
+    varlist:
+      - var_name: area_t
+        module: ocean_model
+        reduction: none
+        kind: r4
+
+  - file_name: case.mom6.h.Agulhas_Section%4yr-%2mo
+    freq: 1
+    freq_units: months
+    time_units: days
+    unlimdim: time
+    new_file_freq: 1
+    new_file_freq_units: months
+    sub_region:
+      - grid_type: latlon
+        corner1: [20.1, -69.8]
+        corner2: [20.1, -69.8]
+        corner3: [20.1, -34.6]
+        corner4: [20.1, -34.6]
+        zbounds: [-1.0, -1.0]
+    varlist:
+      - var_name: vmo
+        module: ocean_model
+        reduction: average
+        kind: r4

@@ -6,10 +6,12 @@ import pytest
 
 from mom6_diagtables import DiagField, DiagFile, parse_diag_table
 from mom6_diagtables.parser import parse_diag_table_string
+from mom6_diagtables.parser_yaml import parse_diag_table_yaml
 
 DATA = Path(__file__).parent / "data"
 GLOBAL = DATA / "diag_table_global"
 CARIB = DATA / "diag_table_regional_carib"
+GLOBAL_YAML = DATA / "diag_table_global.yaml"
 
 
 def test_header_is_parsed():
@@ -99,6 +101,83 @@ def test_prefix_for_field_raises_when_missing():
     with pytest.raises(KeyError):
         table.prefix_for_field("not_a_real_field")
 
+
+# -- YAML parser -----------------------------------------------------------------
+
+def test_yaml_header():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    assert "MOM6" in table.title
+    assert table.base_date == [1, 1, 1, 0, 0, 0]
+
+
+def test_yaml_file_and_field_counts():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    assert len(table.files) == 5
+    assert len(table.fields) == 8
+
+
+def test_yaml_streams():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    streams = table.infer_streams()
+    for expected in ("z", "native", "sfc", "static"):
+        assert expected in streams
+
+
+def test_yaml_file_attributes():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    z = table.infer_streams()["z"]
+    assert isinstance(z, DiagFile)
+    assert z.output_freq == 1
+    assert z.output_freq_units == "months"
+    assert z.time_axis_units == "days"
+    assert z.time_axis_name == "time"
+    assert z.new_file_freq == 1
+    assert z.new_file_freq_units == "months"
+    assert z.file_format == 1       # YAML default
+
+
+def test_yaml_field_attributes():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    thetao = next(f for f in table.fields if f.field_name == "thetao")
+    assert isinstance(thetao, DiagField)
+    assert thetao.module_name == "ocean_model"
+    assert thetao.reduction_method == "average"
+    assert thetao.packing == 2      # r4 -> 2
+    assert thetao.time_sampling == "1"  # YAML default
+
+
+def test_yaml_out_name_override():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    uo = next(f for f in table.fields if f.field_name == "uo")
+    assert uo.output_name == "u"
+
+
+def test_yaml_sub_region_encoded():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    agulhas = next(f for f in table.fields if "Agulhas" in f.file_name)
+    assert agulhas.regional_section != "none"
+    parts = agulhas.regional_section.split()
+    assert len(parts) == 6
+
+
+def test_yaml_no_sub_region_is_none_string():
+    table = parse_diag_table_yaml(GLOBAL_YAML)
+    thetao = next(f for f in table.fields if f.field_name == "thetao")
+    assert thetao.regional_section == "none"
+
+
+def test_parse_diag_table_auto_detects_yaml():
+    # The public parse_diag_table() function should dispatch by extension.
+    table = parse_diag_table(GLOBAL_YAML)
+    assert len(table.files) == 5
+
+
+def test_parse_diag_table_auto_detects_ascii():
+    table = parse_diag_table(GLOBAL)
+    assert len(table.files) == 24
+
+
+# -- ASCII tests (existing) -------------------------------------------------------
 
 def test_comments_and_blank_lines_are_ignored():
     text = (
