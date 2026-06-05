@@ -12,6 +12,8 @@ from dask.distributed import Client
 from mom6_tools import m6plot
 from mom6_tools  import m6toolbox
 from mom6_tools.MOM6grid import MOM6grid
+from mom6_tools.diagnostics import Case, Cluster, Diagnostic
+from mom6_tools.diagnostics.interactive import resolve
 
 def options():
   try: import argparse
@@ -31,47 +33,80 @@ def options():
   return cmdLineArgs
 
 def main():
-  # Get options
+  """Command-line entry point - a thin shim over the MOC diagnostic.
+
+  Preserves the original CLI (``moc.py diag_config.yml [-sd ..] [-ed ..] [-nw N]``):
+  builds a Case from the yaml and runs the MOC diagnostic with plotting and saving on,
+  reproducing the previous outputs (``PNG/MOC/*.png`` and ``ncfiles/<case>_MOC.nc``).
+  """
   args = options()
+  case = Case.from_config(args.diag_config_yml_path,
+                          start_date=args.start_date or None,
+                          end_date=args.end_date or None)
+  case.moc(start_date=args.start_date or None,
+           end_date=args.end_date or None,
+           nw=args.number_of_workers,
+           plot=True, save=True, debug=args.debug)
+  print('{} was run successfully!'.format(os.path.basename(__file__)))
+  return
 
-  nw = args.number_of_workers
-  os.makedirs('PNG/MOC', exist_ok=True)
-  os.makedirs('ncfiles', exist_ok=True)
 
-  # Read in the yaml file
-  diag_config_yml = yaml.load(open(args.diag_config_yml_path,'r'), Loader=yaml.Loader)
+class MOC(Diagnostic):
+  """Meridional overturning circulation (global, Atlantic, Indo-Pacific, GM, FFH).
 
-  caseroot = diag_config_yml['Case']['CASEROOT']
-  args.casename = cime_xmlquery(caseroot, 'CASE')
-  DOUT_S = cime_xmlquery(caseroot, 'DOUT_S')
-  if DOUT_S:
-    OUTDIR = cime_xmlquery(caseroot, 'DOUT_S_ROOT')+'/ocn/hist/'
-  else:
-    OUTDIR = cime_xmlquery(caseroot, 'RUNDIR')
+  Computes time-mean overturning sections and AMOC/ACC time series, returning them as a
+  single ``xarray.Dataset``.  The original script interleaves the streamfunction
+  computation with plotting, so MOC overrides ``run`` and uses one engine
+  (:func:`_compute_moc`) for both; the ``plot`` and ``save`` policies gate the figures and
+  the NetCDF.  ``compute`` runs that engine with plotting off for notebook use.
+  """
 
-  args.savefigs = True; args.outdir = 'PNG/MOC/'
-  print('Output directory is:', OUTDIR)
-  print('Casename is:', args.casename)
-  print('Number of workers to be used:', nw)
+  name = 'moc'
+  requires = {'z': ['vmo', 'vhml', 'vhGM'], 'static': None, 'geom': None}
 
-  # set avg dates
-  avg = diag_config_yml['Avg']
-  if not args.start_date : args.start_date = avg['start_date']
-  if not args.end_date : args.end_date = avg['end_date']
+  def run(self, *, start_date=None, end_date=None, nw=0,
+          plot='auto', save='auto', outdir='PNG/MOC/', ncdir='ncfiles', debug=False):
+    do_plot = resolve(plot)
+    do_save = resolve(save)
+    sd = start_date if start_date else self.case.source.start_date
+    ed = end_date if end_date else self.case.source.end_date
+    if do_plot:
+      os.makedirs(outdir, exist_ok=True)
+    print('Casename is:', self.case.casename)
+    print('Number of workers to be used:', nw)
+    with Cluster(nw) as cl:
+      moc = _compute_moc(self.case, sd, ed, parallel=cl.parallel,
+                         savefigs=do_plot, outdir=outdir, debug=debug)
+    if do_save:
+      os.makedirs(ncdir, exist_ok=True)
+      casename = self.case.casename if self.case.casename else ''
+      fname = os.path.join(ncdir, str(casename) + '_MOC.nc')
+      print('Saving netCDF files...')
+      moc.to_netcdf(fname)
+    return moc
 
-  # file names are provided via yaml
-  args.monthly = args.casename+diag_config_yml['Fnames']['z']
-  args.sigma2 = args.casename+diag_config_yml['Fnames']['rho2']
-  args.static = args.casename+diag_config_yml['Fnames']['static']
-  args.geom = args.casename+diag_config_yml['Fnames']['geom']
+  def compute(self, *, start_date=None, end_date=None, nw=0, debug=False):
+    """Compute the MOC dataset without plotting or saving (notebook-friendly)."""
+    return self.run(start_date=start_date, end_date=end_date, nw=nw,
+                    plot=False, save=False, debug=debug)
 
-  # read grid info
-  geom_file = OUTDIR+'/'+args.geom
-  if os.path.exists(geom_file):
-    grd = MOM6grid(OUTDIR+'/'+args.static, geom_file)
-  else:
-    grd = MOM6grid(OUTDIR+'/'+args.static)
 
+def _compute_moc(case, start_date, end_date, *, parallel=False, savefigs=True,
+                 outdir='PNG/MOC/', debug=False):
+  """Shared MOC engine for both the CLI and ``Case.moc``.
+
+  Returns the ``moc`` ``xarray.Dataset`` (the caller writes the NetCDF).  The numerical
+  operations match the original ``moc.py`` exactly; only the data access (grid + history
+  files) now goes through the Case's :class:`DataSource`, and the matplotlib blocks are
+  gated by ``savefigs`` so the dataset can be produced without side effects.
+  """
+  config = case.config or {}
+  avg = config.get('Avg', {})
+  casename = case.casename if case.casename else ''
+  conversion_factor = 1.e-9
+
+  # read grid info (static, with geom override when present), via the DataSource
+  grd = case.source.grid()
   try:
     depth = grd.depth_ocean
   except:
@@ -81,31 +116,17 @@ def main():
   basin_code = m6toolbox.genBasinMasks(grd.geolon, grd.geolat, depth)
   basin_code_xr = m6toolbox.genBasinMasks(grd.geolon, grd.geolat, depth, verbose=False, xda=True)
 
-  parallel = False
-  if nw > 1:
-    parallel = True
-    cluster = NCARCluster()
-    cluster.scale(nw)
-    client = Client(cluster)
-
-  print('Reading {} dataset...'.format(args.monthly))
+  print('Reading dataset...')
   startTime = datetime.now()
-  # load data
-  def preprocess(ds):
-    variables = ['vmo','vhml','vhGM']
-    for v in variables:
-      if v not in ds.variables:
-        ds[v] = xr.zeros_like(ds.vo)
-    return ds[variables]
-
-  ds = xr.open_mfdataset(OUTDIR+'/'+args.monthly, parallel=parallel, preprocess=preprocess)
+  # load data: select vmo/vhml/vhGM, filling any that the run did not output with zeros
+  ds = case.source.open('z', variables=['vmo', 'vhml', 'vhGM'], parallel=parallel)
   print('Time elasped: ', datetime.now() - startTime)
 
   # compute yearly means first since this will be used in the time series
   attrs = {
          'description': 'Annual mean meridional thickness flux by components ',
          'reduction_method': 'annual mean weighted by days in each month',
-         'casename': args.casename
+         'casename': casename
          }
   print('Computing yearly means...')
   startTime = datetime.now()
@@ -113,8 +134,8 @@ def main():
   print('Time elasped: ', datetime.now() - startTime)
 
   startTime = datetime.now()
-  print('Selecting data between {} and {}...'.format(args.start_date, args.end_date))
-  ds_sel = ds_ann.sel(time=slice(args.start_date, args.end_date))
+  print('Selecting data between {} and {}...'.format(start_date, end_date))
+  ds_sel = ds_ann.sel(time=slice(start_date, end_date))
   print('Time elasped: ', datetime.now() - startTime)
 
   print('Computing time mean...')
@@ -124,7 +145,6 @@ def main():
 
   # create a ndarray subclass
   class C(np.ndarray): pass
-  conversion_factor = 1.e-9
 
   varName = 'vmo'
   tmp = np.ma.masked_invalid(ds_mean[varName].values)
@@ -133,26 +153,25 @@ def main():
   VHmod.units = ds[varName].units
   Zmod = m6toolbox.get_z(ds, depth, varName)
 
-  casename = args.casename if args.casename != '' else ''
-
   # Global MOC
-  m6plot.setFigureSize([16,9],576,debug=False)
-  axis = plt.gca()
-  cmap = plt.get_cmap('dunnePM')
   zg = Zmod.min(axis=-1)
   psiPlot = MOCpsi(VHmod)*conversion_factor
   psiPlot = 0.5 * (psiPlot[0:-1,:]+psiPlot[1::,:])
   yyg = grd.geolat_c[:,:].max(axis=-1)+0*zg
-  ci=m6plot.pmCI(0.,40.,5.)
-  plotPsi(yyg, zg, psiPlot, ci, 'Global MOC [Sv],' + 'averaged between '+ args.start_date + ' and '+ args.end_date )
-  plt.xlabel(r'Latitude [$\degree$N]')
-  plt.suptitle(casename)
-  findExtrema(yyg, zg, psiPlot, max_lat=-30.)
-  findExtrema(yyg, zg, psiPlot, min_lat=25., min_depth=250.)
-  findExtrema(yyg, zg, psiPlot, min_depth=2000., mult=-1.)
-  plt.gca().invert_yaxis()
-  objOut = args.outdir+str(casename)+'_MOC_global.png'
-  plt.savefig(objOut)
+  if savefigs:
+    m6plot.setFigureSize([16,9],576,debug=False)
+    axis = plt.gca()
+    cmap = plt.get_cmap('dunnePM')
+    ci=m6plot.pmCI(0.,40.,5.)
+    plotPsi(yyg, zg, psiPlot, ci, 'Global MOC [Sv],' + 'averaged between '+ str(start_date) + ' and '+ str(end_date) )
+    plt.xlabel(r'Latitude [$\degree$N]')
+    plt.suptitle(casename)
+    findExtrema(yyg, zg, psiPlot, max_lat=-30.)
+    findExtrema(yyg, zg, psiPlot, min_lat=25., min_depth=250.)
+    findExtrema(yyg, zg, psiPlot, min_depth=2000., mult=-1.)
+    plt.gca().invert_yaxis()
+    objOut = outdir+str(casename)+'_MOC_global.png'
+    plt.savefig(objOut)
 
   if 'zl' in ds:
     zl = ds.zl.values
@@ -173,41 +192,40 @@ def main():
                                 'moc_35S' :   (('time'), np.zeros(ds_ann.time.shape)),
                                 'amoc_26' :   (('time'), np.zeros(ds_ann.time.shape)) },
                             coords={'zl': zl, 'yq': ds.yq, 'time': ds_ann.time})
-  attrs = {'description': 'MOC time-mean sections and time-series', 'units': 'Sv',
-           'start_date': avg['start_date'], 'end_date': avg['end_date'], 'casename': args.casename}
-  m6toolbox.add_global_attrs(moc, attrs)
+  ds_attrs = {'description': 'MOC time-mean sections and time-series', 'units': 'Sv',
+              'start_date': avg.get('start_date'), 'end_date': avg.get('end_date'),
+              'casename': casename}
+  m6toolbox.add_global_attrs(moc, ds_attrs)
 
-  m6plot.setFigureSize([16,9],576,debug=False)
-  cmap = plt.get_cmap('dunnePM')
+  # Indo-Pacific MOC
   atl = 0*basin_code; atl[(basin_code==2) | (basin_code==4) | (basin_code==6) | (basin_code==7) | (basin_code==8)]=1
   m = basin_code_xr.sel(region='Global').values - atl
-  ci=m6plot.pmCI(0.,22.,2.)
-  z = (m*Zmod).min(axis=-1); psiPlot = MOCpsi(VHmod, vmsk=m*np.roll(m,-1,axis=-2))*conversion_factor
+  psiPlot = MOCpsi(VHmod, vmsk=m*np.roll(m,-1,axis=-2))*conversion_factor
   psiPlot = 0.5 * (psiPlot[0:-1,:]+psiPlot[1::,:])
-  yy = grd.geolat_c[:,:].max(axis=-1)+0*z
-  plotPsi(yy, z, psiPlot, ci, 'Indo-Pacific MOC [Sv]')
-  plt.xlabel(r'Latitude [$\degree$N]')
-  plt.suptitle(casename)
-  plt.xlim((-34.5,50))
-  plt.gca().invert_yaxis()
-  objOut = args.outdir+str(casename)+'_MOC_IndoPacific.png'
-  plt.savefig(objOut,format='png')
   moc['ipmoc'].data = psiPlot
+  if savefigs:
+    m6plot.setFigureSize([16,9],576,debug=False)
+    cmap = plt.get_cmap('dunnePM')
+    ci=m6plot.pmCI(0.,22.,2.)
+    z = (m*Zmod).min(axis=-1)
+    yy = grd.geolat_c[:,:].max(axis=-1)+0*z
+    plotPsi(yy, z, psiPlot, ci, 'Indo-Pacific MOC [Sv]')
+    plt.xlabel(r'Latitude [$\degree$N]')
+    plt.suptitle(casename)
+    plt.xlim((-34.5,50))
+    plt.gca().invert_yaxis()
+    objOut = outdir+str(casename)+'_MOC_IndoPacific.png'
+    plt.savefig(objOut,format='png')
 
   # Atlantic MOC
-  m6plot.setFigureSize([16,9],576,debug=False)
-  cmap = plt.get_cmap('dunnePM')
   # 2 - Atlatic; 4 - Arctic; 6 - Med; 7 - Baltic; 8 - Hudson Bay;
   m = 0*basin_code; m[(basin_code==2) | (basin_code==4) | (basin_code==6) | (basin_code==7) | (basin_code==8)]=1
-  ci=m6plot.pmCI(0.,22.,2.)
   z = (m*Zmod).min(axis=-1)
   psiPlot = MOCpsi(VHmod, vmsk=m*np.roll(m,-1,axis=-2))*conversion_factor
   psiPlot = 0.5 * (psiPlot[0:-1,:]+psiPlot[1::,:])
   yy = grd.geolat_c[:,:].max(axis=-1)+0*z
-  plotPsi(yy, z, psiPlot, ci, 'Atlantic MOC [Sv],'+ 'averaged between '+ args.start_date + ' and '+ args.end_date )
-  plt.xlabel(r'Latitude [$\degree$N]')
-  plt.suptitle(casename)
-  # find range to extract values near the RAPID array
+  moc['amoc'].data = psiPlot
+  # find range to extract values near the RAPID array (also used by the time series below);
   # this will depend on the grid spacing
   try:
     tmp = findExtrema(yy, z, psiPlot, min_lat=26.5, max_lat=27., min_depth=250., plot=False) # RAPID
@@ -218,30 +236,36 @@ def main():
     min_lat_rapid = 26.
     max_lat_rapid = 28.
     max_lat = -30.
+  if savefigs:
+    m6plot.setFigureSize([16,9],576,debug=False)
+    cmap = plt.get_cmap('dunnePM')
+    ci=m6plot.pmCI(0.,22.,2.)
+    plotPsi(yy, z, psiPlot, ci, 'Atlantic MOC [Sv],'+ 'averaged between '+ str(start_date) + ' and '+ str(end_date) )
+    plt.xlabel(r'Latitude [$\degree$N]')
+    plt.suptitle(casename)
+    findExtrema(yy, z, psiPlot, min_lat=min_lat_rapid, max_lat=max_lat_rapid, min_depth=250.) # RAPID
+    findExtrema(yy, z, psiPlot, min_lat=44, max_lat=46., min_depth=250.) # RAPID
+    findExtrema(yy, z, psiPlot, max_lat=max_lat)
+    findExtrema(yy, z, psiPlot)
+    findExtrema(yy, z, psiPlot, min_lat=5.)
+    plt.gca().invert_yaxis()
+    objOut = outdir+str(casename)+'_MOC_Atlantic.png'
+    plt.savefig(objOut,format='png')
 
-  findExtrema(yy, z, psiPlot, min_lat=min_lat_rapid, max_lat=max_lat_rapid, min_depth=250.) # RAPID
-  findExtrema(yy, z, psiPlot, min_lat=44, max_lat=46., min_depth=250.) # RAPID
-  findExtrema(yy, z, psiPlot, max_lat=max_lat)
-  findExtrema(yy, z, psiPlot)
-  findExtrema(yy, z, psiPlot, min_lat=5.)
-  plt.gca().invert_yaxis()
-  objOut = args.outdir+str(casename)+'_MOC_Atlantic.png'
-  plt.savefig(objOut,format='png')
-  moc['amoc'].data = psiPlot
-
-  print('Plotting AMOC profile at 26N...')
-  catalog = intake.open_catalog(diag_config_yml['oce_cat'])
-  rapid_vertical = catalog["moc-rapid"].to_dask()
-  fig, ax = plt.subplots(nrows=1, ncols=1)
-  ax.plot(rapid_vertical.stream_function_mar.mean('time'), rapid_vertical.depth, 'k', label='RAPID')
-  ax.plot(moc['amoc'].sel(yq=26, method='nearest'), zl, label=casename)
-  ax.legend()
-  plt.gca().invert_yaxis()
-  plt.grid()
-  ax.set_xlabel('AMOC @ 26N [Sv]')
-  ax.set_ylabel('Depth [m]')
-  objOut = args.outdir+str(casename)+'_MOC_profile_26N.png'
-  plt.savefig(objOut,format='png')
+  if savefigs:
+    print('Plotting AMOC profile at 26N...')
+    catalog = intake.open_catalog(config['oce_cat'])
+    rapid_vertical = catalog["moc-rapid"].to_dask()
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.plot(rapid_vertical.stream_function_mar.mean('time'), rapid_vertical.depth, 'k', label='RAPID')
+    ax.plot(moc['amoc'].sel(yq=26, method='nearest'), zl, label=casename)
+    ax.legend()
+    plt.gca().invert_yaxis()
+    plt.grid()
+    ax.set_xlabel('AMOC @ 26N [Sv]')
+    ax.set_ylabel('Depth [m]')
+    objOut = outdir+str(casename)+'_MOC_profile_26N.png'
+    plt.savefig(objOut,format='png')
 
   # --- Vectorized time series computation ---
   # Precompute Atlantic vmsk (m is the Atlantic mask from above)
@@ -250,7 +274,7 @@ def main():
   print('Computing time series (vectorized)...')
   startTime = datetime.now()
 
-  # Load all annual data at once — one dask graph evaluation vs T separate ones
+  # Load all annual data at once - one dask graph evaluation vs T separate ones
   vmo_all  = np.ma.filled(np.ma.masked_invalid(ds_ann['vmo'].values),  0.)  # (T,K,J,I)
   vhGM_all = np.ma.filled(np.ma.masked_invalid(ds_ann['vhGM'].values), 0.)  # (T,K,J,I)
 
@@ -269,7 +293,7 @@ def main():
   amoc_45    = findExtrema_batch(yy,  z,  psi_atl_all, min_lat=44.,           max_lat=46.,           min_depth=250.)
   moc_GM_ACC = findExtrema_batch(yyg, zg, psiGM_all,   min_lat=-65.,          max_lat=-30.,          mult=-1.)
 
-  # Global MOC at fixed lat/depth points — precompute indices to avoid xr.DataArray overhead per step
+  # Global MOC at fixed lat/depth points - precompute indices to avoid xr.DataArray overhead per step
   lat_1d = yyg[0, :]   # surface-level latitude for each j  (J,)
   j_70S  = np.argmin(np.abs(lat_1d - (-70.)))
   j_35S  = np.argmin(np.abs(lat_1d - (-35.)))
@@ -287,54 +311,50 @@ def main():
   moc['moc_70S'].data    = moc_70S
   moc['moc_35S'].data    = moc_35S
 
-  if parallel:
-    print('Releasing workers ...')
-    client.close(); cluster.close()
+  if savefigs:
+    print('Plotting...')
+    # load datasets from oce catalog
+    amoc_core_26 = catalog["moc-core2-26p5"].to_dask()
+    amoc_pop_26  = catalog["moc-pop-jra-26"].to_dask()
+    rapid = m6toolbox.weighted_temporal_mean_vars(catalog["transports-rapid"].to_dask())
 
-  print('Plotting...')
+    amoc_core_45 = catalog["moc-core2-45"].to_dask()
+    amoc_pop_45  = catalog["moc-pop-jra-45"].to_dask()
 
-  # load datasets from oce catalog
-  amoc_core_26 = catalog["moc-core2-26p5"].to_dask()
-  amoc_pop_26  = catalog["moc-pop-jra-26"].to_dask()
-  rapid = m6toolbox.weighted_temporal_mean_vars(catalog["transports-rapid"].to_dask())
+    # plot AMOC @ 26N
+    fig = plt.figure(figsize=(12, 6))
+    plt.plot(np.arange(len(moc.time))+1958.5, moc['amoc_26'].values, color='k', label=casename, lw=2)
+    core_mean = amoc_core_26['MOC'].mean(axis=0).data
+    core_std  = amoc_core_26['MOC'].std(axis=0).data
+    plt.plot(amoc_core_26.time, core_mean, 'k', label='CORE II (group mean)', color='#1B2ACC', lw=1)
+    plt.fill_between(amoc_core_26.time, core_mean-core_std, core_mean+core_std,
+      alpha=0.25, edgecolor='#1B2ACC', facecolor='#089FFF')
+    plt.plot(np.arange(len(amoc_pop_26.time))+1958.5, amoc_pop_26.AMOC_26n.values, color='r', label='POP', lw=1)
+    plt.plot(np.arange(len(rapid.time))+2004.5, rapid.moc_mar_hc10.values, color='green', label='RAPID', lw=1)
+    plt.title('AMOC @ 26 $^o$ N', fontsize=16)
+    plt.ylim(5,20)
+    plt.xlim(1948, 1958.5+len(moc.time))
+    plt.xlabel('Time [years]', fontsize=16); plt.ylabel('Sv', fontsize=16)
+    plt.legend(fontsize=13, ncol=2)
+    objOut = outdir+str(casename)+'_MOC_26N_time_series.png'
+    plt.savefig(objOut, format='png')
 
-  amoc_core_45 = catalog["moc-core2-45"].to_dask()
-  amoc_pop_45  = catalog["moc-pop-jra-45"].to_dask()
-
-  # plot AMOC @ 26N
-  fig = plt.figure(figsize=(12, 6))
-  plt.plot(np.arange(len(moc.time))+1958.5, moc['amoc_26'].values, color='k', label=casename, lw=2)
-  core_mean = amoc_core_26['MOC'].mean(axis=0).data
-  core_std  = amoc_core_26['MOC'].std(axis=0).data
-  plt.plot(amoc_core_26.time, core_mean, 'k', label='CORE II (group mean)', color='#1B2ACC', lw=1)
-  plt.fill_between(amoc_core_26.time, core_mean-core_std, core_mean+core_std,
-    alpha=0.25, edgecolor='#1B2ACC', facecolor='#089FFF')
-  plt.plot(np.arange(len(amoc_pop_26.time))+1958.5, amoc_pop_26.AMOC_26n.values, color='r', label='POP', lw=1)
-  plt.plot(np.arange(len(rapid.time))+2004.5, rapid.moc_mar_hc10.values, color='green', label='RAPID', lw=1)
-  plt.title('AMOC @ 26 $^o$ N', fontsize=16)
-  plt.ylim(5,20)
-  plt.xlim(1948, 1958.5+len(moc.time))
-  plt.xlabel('Time [years]', fontsize=16); plt.ylabel('Sv', fontsize=16)
-  plt.legend(fontsize=13, ncol=2)
-  objOut = args.outdir+str(casename)+'_MOC_26N_time_series.png'
-  plt.savefig(objOut, format='png')
-
-  # plot AMOC @ 45N
-  fig = plt.figure(figsize=(12, 6))
-  plt.plot(np.arange(len(moc.time))+1958.5, moc['amoc_45'], color='k', label=casename, lw=2)
-  core_mean = amoc_core_45['MOC'].mean(axis=0).data
-  core_std  = amoc_core_45['MOC'].std(axis=0).data
-  plt.plot(amoc_core_45.time, core_mean, 'k', label='CORE II (group mean)', color='#1B2ACC', lw=2)
-  plt.fill_between(amoc_core_45.time, core_mean-core_std, core_mean+core_std,
-    alpha=0.25, edgecolor='#1B2ACC', facecolor='#089FFF')
-  plt.plot(np.arange(len(amoc_pop_45.time))+1958.5, amoc_pop_45.AMOC_45n.values, color='r', label='POP', lw=1)
-  plt.title('AMOC @ 45 $^o$ N', fontsize=16)
-  plt.ylim(5,20)
-  plt.xlim(1948, 1958+len(moc.time))
-  plt.xlabel('Time [years]', fontsize=16); plt.ylabel('Sv', fontsize=16)
-  plt.legend(fontsize=14)
-  objOut = args.outdir+str(casename)+'_MOC_45N_time_series.png'
-  plt.savefig(objOut, format='png')
+    # plot AMOC @ 45N
+    fig = plt.figure(figsize=(12, 6))
+    plt.plot(np.arange(len(moc.time))+1958.5, moc['amoc_45'], color='k', label=casename, lw=2)
+    core_mean = amoc_core_45['MOC'].mean(axis=0).data
+    core_std  = amoc_core_45['MOC'].std(axis=0).data
+    plt.plot(amoc_core_45.time, core_mean, 'k', label='CORE II (group mean)', color='#1B2ACC', lw=2)
+    plt.fill_between(amoc_core_45.time, core_mean-core_std, core_mean+core_std,
+      alpha=0.25, edgecolor='#1B2ACC', facecolor='#089FFF')
+    plt.plot(np.arange(len(amoc_pop_45.time))+1958.5, amoc_pop_45.AMOC_45n.values, color='r', label='POP', lw=1)
+    plt.title('AMOC @ 45 $^o$ N', fontsize=16)
+    plt.ylim(5,20)
+    plt.xlim(1948, 1958+len(moc.time))
+    plt.xlabel('Time [years]', fontsize=16); plt.ylabel('Sv', fontsize=16)
+    plt.legend(fontsize=14)
+    objOut = outdir+str(casename)+'_MOC_45N_time_series.png'
+    plt.savefig(objOut, format='png')
 
   # Submesoscale-induced Global MOC
   varName = 'vhml'
@@ -343,21 +363,23 @@ def main():
   VHml = tmp.view(C)
   VHml.units = ds[varName].units
   Zmod = m6toolbox.get_z(ds, depth, varName)
-  m6plot.setFigureSize([16,9],576,debug=False)
-  axis = plt.gca()
-  cmap = plt.get_cmap('dunnePM')
-  z = Zmod.min(axis=-1); psiPlot = MOCpsi(VHml)*conversion_factor
+  psiPlot = MOCpsi(VHml)*conversion_factor
   psiPlot = 0.5 * (psiPlot[0:-1,:]+psiPlot[1::,:])
-  yy = grd.geolat_c[:,:].max(axis=-1)+0*z
-  ci=m6plot.pmCI(0.,20.,2.)
-  plotPsi(yy, z, psiPlot, ci, 'Global FFH MOC [Sv],' + 'averaged between '+ args.start_date + ' and '+ args.end_date,
-          zval=[0.,-400.,-1000.])
-  plt.xlabel(r'Latitude [$\degree$N]')
-  plt.suptitle(casename)
-  plt.gca().invert_yaxis()
-  objOut = args.outdir+str(casename)+'_FFH_MOC_global.png'
-  plt.savefig(objOut)
   moc['moc_FFH'].data = psiPlot
+  if savefigs:
+    z = Zmod.min(axis=-1)
+    yy = grd.geolat_c[:,:].max(axis=-1)+0*z
+    m6plot.setFigureSize([16,9],576,debug=False)
+    axis = plt.gca()
+    cmap = plt.get_cmap('dunnePM')
+    ci=m6plot.pmCI(0.,20.,2.)
+    plotPsi(yy, z, psiPlot, ci, 'Global FFH MOC [Sv],' + 'averaged between '+ str(start_date) + ' and '+ str(end_date),
+            zval=[0.,-400.,-1000.])
+    plt.xlabel(r'Latitude [$\degree$N]')
+    plt.suptitle(casename)
+    plt.gca().invert_yaxis()
+    objOut = outdir+str(casename)+'_FFH_MOC_global.png'
+    plt.savefig(objOut)
 
   # GM-induced Global MOC
   varName = 'vhGM'
@@ -366,28 +388,25 @@ def main():
   VHGM = tmp.view(C)
   VHGM.units = ds[varName].units
   Zmod = m6toolbox.get_z(ds, depth, varName)
-  m6plot.setFigureSize([16,9],576,debug=False)
-  axis = plt.gca()
-  cmap = plt.get_cmap('dunnePM')
-  z = Zmod.min(axis=-1); psiPlot = MOCpsi(VHGM)*conversion_factor
+  psiPlot = MOCpsi(VHGM)*conversion_factor
   psiPlot = 0.5 * (psiPlot[0:-1,:]+psiPlot[1::,:])
-  yy = grd.geolat_c[:,:].max(axis=-1)+0*z
-  ci=m6plot.pmCI(0.,20.,2.)
-  plotPsi(yy, z, psiPlot, ci, 'Global GM MOC [Sv],' + 'averaged between '+ args.start_date + ' and '+ args.end_date)
-  plt.xlabel(r'Latitude [$\degree$N]')
-  plt.suptitle(casename)
-  plt.gca().invert_yaxis()
-  findExtrema(yy, z, psiPlot, min_lat=-65., max_lat=-30, mult=-1.)
-  objOut = args.outdir+str(casename)+'_GM_MOC_global.png'
-  plt.savefig(objOut)
   moc['moc_GM'].data = psiPlot
+  if savefigs:
+    z = Zmod.min(axis=-1)
+    yy = grd.geolat_c[:,:].max(axis=-1)+0*z
+    m6plot.setFigureSize([16,9],576,debug=False)
+    axis = plt.gca()
+    cmap = plt.get_cmap('dunnePM')
+    ci=m6plot.pmCI(0.,20.,2.)
+    plotPsi(yy, z, psiPlot, ci, 'Global GM MOC [Sv],' + 'averaged between '+ str(start_date) + ' and '+ str(end_date))
+    plt.xlabel(r'Latitude [$\degree$N]')
+    plt.suptitle(casename)
+    plt.gca().invert_yaxis()
+    findExtrema(yy, z, psiPlot, min_lat=-65., max_lat=-30, mult=-1.)
+    objOut = outdir+str(casename)+'_GM_MOC_global.png'
+    plt.savefig(objOut)
 
-  print('Saving netCDF files...')
-  moc.to_netcdf('ncfiles/'+str(casename)+'_MOC.nc')
-
-  print('{} was run successfully!'.format(os.path.basename(__file__)))
-
-  return
+  return moc
 
 
 def MOCpsi(vh, vmsk=None):

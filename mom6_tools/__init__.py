@@ -9,6 +9,11 @@ It relies on the following python packages:
 
 from importlib.metadata import version, PackageNotFoundError
 
+# Object-oriented entry point (the ongoing refactor).  The Case facade pulls in only the
+# light data layer; individual diagnostics import their heavy dependencies on first use
+# via the registry, so this stays cheap.
+from mom6_tools.diagnostics import Case
+
 #from MOM6grid import *
 #from section_transports import *
 #from latlon_analysis import *

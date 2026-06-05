@@ -10,11 +10,15 @@ scripts:
 * :class:`~mom6_tools.diagnostics.cluster.Cluster` - a small context manager around
   ``m6toolbox.request_workers`` for dask parallelism.
 
-Later phases add a ``Case`` facade and a ``Diagnostic`` base class on top of these.
-Nothing here changes the behaviour of the existing scripts; they keep working as-is.
+On top of these sit the :class:`Case` facade and the :class:`Diagnostic` base class:
+``Case.from_config(...).moc(...)`` returns a mutable ``xarray`` result and auto-plots when
+run non-interactively.  Nothing here changes the behaviour of the existing scripts; they
+keep working as-is (each becomes a thin shim over the matching diagnostic as it migrates).
 """
 
+from .base import Diagnostic
+from .case import Case
 from .cluster import Cluster
 from .datasource import DataSource
 
-__all__ = ["DataSource", "Cluster"]
+__all__ = ["Case", "Diagnostic", "DataSource", "Cluster"]
