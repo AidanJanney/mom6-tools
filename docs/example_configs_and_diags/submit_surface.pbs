@@ -1,0 +1,41 @@
+#!/bin/bash
+# Emulate the surface diagnostic workflow as a Casper PBS job.
+#
+#   qsub submit_surface.pbs
+#
+# Edit the -A account below (and PROJECT) before submitting. Outputs (PNG/, ncfiles/)
+# are written into the directory you submit from ($PBS_O_WORKDIR).
+
+#PBS -N surface_diag
+#PBS -A PXXXXXXXX
+#PBS -q casper
+#PBS -l select=1:ncpus=4:mem=40GB
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -e
+
+# --- edit these ---------------------------------------------------------------
+PROJECT=PXXXXXXXX
+CONDA_ENV=/glade/work/ajanney/conda-envs/mom6-tools
+REPO=/glade/work/ajanney/Software/mom6-tools
+CONFIG=${REPO}/docs/example_configs_and_diags/diag_config.yml
+START=2000-01-01
+END=2001-12-31
+NW=0          # 0 = serial in this job; >0 spawns that many dask-jobqueue worker jobs
+# ------------------------------------------------------------------------------
+
+# Activate the conda environment.
+module load conda 2>/dev/null || true
+conda activate "${CONDA_ENV}"
+
+# get_cluster (used when NW>0) charges this account; also used as the default project.
+export PBS_ACCOUNT=${PROJECT}
+
+# Run from the submit directory so PNG/ and ncfiles/ land there.
+cd "${PBS_O_WORKDIR:-.}"
+
+python "${REPO}/docs/example_configs_and_diags/run_surface.py" \
+    "${CONFIG}" -sd "${START}" -ed "${END}" -nw "${NW}"
+
+echo "surface diagnostic finished; see ./ncfiles and ./PNG/SFC"

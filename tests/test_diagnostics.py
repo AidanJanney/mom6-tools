@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from mom6_tools.diagnostics import Case, Diagnostic
-from mom6_tools.diagnostics import interactive, registry
+from mom6_tools.core import Case, Diagnostic
+from mom6_tools.core import interactive, registry
 
 
 class _Dummy(Diagnostic):
@@ -69,6 +69,11 @@ def test_registry_resolves_moc_lazily():
 def test_registry_unknown_raises():
     with pytest.raises(KeyError):
         registry.get_diagnostic("does_not_exist")
+
+
+def test_registry_lists_surface():
+    # 'surface' is registered (lazy string target; don't import the heavy module here).
+    assert "surface" in registry.available()
 
 
 def test_diagnostic_run_returns_result(case):

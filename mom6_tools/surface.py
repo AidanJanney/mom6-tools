@@ -14,6 +14,141 @@ from mom6_tools.m6toolbox import weighted_temporal_mean
 from mom6_tools.m6plot import xycompare, xyplot
 from mom6_tools.MOM6grid import MOM6grid
 from distributed import Client
+from mom6_tools.core import Cluster, Diagnostic
+from mom6_tools.core.interactive import resolve
+
+# Surface-stream fields the OO diagnostic always needs (present in both regional and
+# global MOM6 output).  Sea-surface height is named differently across configurations
+# (regional runs write ``SSH``; global runs write ``zos``), so it is picked up
+# opportunistically rather than required.
+_SFC_FIELDS = ['tos', 'SSU', 'SSV', 'speed']
+_SSH_NAMES = ['SSH', 'zos']
+
+
+class Surface(Diagnostic):
+  """Time-mean and monthly climatology of ``sfc``-stream surface fields.
+
+  For ``tos`` / ``SSU`` / ``SSV`` / ``speed`` (and sea-surface height when present, named
+  either ``SSH`` or ``zos``) this computes the day-weighted time mean over the averaging
+  window and a monthly climatology, returning them in one ``xarray.Dataset``.  The
+  tracer-point scalars (tos, speed, height) are map-plotted; the staggered velocity
+  components are saved but not plotted.  No observational comparison (that lived in the
+  legacy ``surface.py`` and may return later).
+
+  This is a fused diagnostic (compute and plot share one engine, :func:`_compute_surface`),
+  so it overrides ``run``; ``compute`` runs the engine with plotting/saving off.
+  """
+
+  name = 'surface'
+  requires = {'sfc': _SFC_FIELDS, 'static': None}
+
+  def run(self, *, start_date=None, end_date=None, nw=0,
+          plot='auto', save='auto', outdir='PNG/SFC/', ncdir='ncfiles', debug=False):
+    do_plot = resolve(plot)
+    do_save = resolve(save)
+    sd = start_date if start_date else self.case.source.start_date
+    ed = end_date if end_date else self.case.source.end_date
+    if do_plot:
+      os.makedirs(outdir, exist_ok=True)
+    print('Casename is:', self.case.casename)
+    print('Number of workers to be used:', nw)
+    with Cluster(nw) as cl:
+      ds_out = _compute_surface(self.case, sd, ed, parallel=cl.parallel,
+                                savefigs=do_plot, outdir=outdir, debug=debug)
+    if do_save:
+      os.makedirs(ncdir, exist_ok=True)
+      casename = self.case.casename if self.case.casename else ''
+      fname = os.path.join(ncdir, str(casename) + '_surface.nc')
+      print('Saving netCDF file:', fname)
+      ds_out.to_netcdf(fname)
+    return ds_out
+
+  def compute(self, *, start_date=None, end_date=None, nw=0, debug=False):
+    """Compute the surface dataset without plotting or saving (notebook-friendly)."""
+    return self.run(start_date=start_date, end_date=end_date, nw=nw,
+                    plot=False, save=False, debug=debug)
+
+
+def _compute_surface(case, start_date, end_date, *, parallel=False, savefigs=True,
+                     outdir='PNG/SFC/', debug=False):
+  """Shared surface engine for both ``Case.surface`` and (future) the CLI.
+
+  Returns an ``xarray.Dataset`` with ``mean_<var>`` (day-weighted time mean over
+  ``[start_date, end_date]``) and ``<var>_climatology`` (monthly climatology) for each
+  available field.  Data access goes through the Case's :class:`DataSource`; the
+  matplotlib block is gated by ``savefigs`` so the dataset can be produced without side
+  effects.
+  """
+  casename = case.casename if case.casename else ''
+  grd = case.source.grid()
+
+  print('Reading surface dataset...')
+  startTime = datetime.now()
+  ds = case.source.open('sfc', parallel=parallel)
+  # The required fields are guaranteed present (enforced by requires); add sea-surface
+  # height under whichever name this run used.
+  fields = [v for v in _SFC_FIELDS if v in ds.variables]
+  ssh_name = next((n for n in _SSH_NAMES if n in ds.variables), None)
+  if ssh_name:
+    fields.append(ssh_name)
+  ds = ds.sel(time=slice(start_date, end_date))
+  print('Time elapsed: ', datetime.now() - startTime)
+
+  print('Computing time mean and monthly climatology for: {}'.format(fields))
+  startTime = datetime.now()
+  data = {}
+  for var in fields:
+    data['mean_' + var] = weighted_temporal_mean(ds, var).mean('time')
+    data[var + '_climatology'] = ds[var].groupby('time.month').mean('time')
+  ds_out = xr.Dataset(data).compute()
+  print('Time elapsed: ', datetime.now() - startTime)
+
+  attrs = {'start_date': start_date,
+           'end_date': end_date,
+           'casename': casename,
+           'description': 'Surface-field time means and monthly climatologies',
+           'module': os.path.basename(__file__)}
+  add_global_attrs(ds_out, attrs)
+
+  if savefigs:
+    print('\n Plotting...')
+    try:
+      area = grd.area_t
+    except AttributeError:
+      area = grd.areacello
+    # pcolormesh rejects non-finite coordinates, which land-block elimination leaves in
+    # geolon/geolat; fill them from neighbours so plotting still works (the field stays
+    # masked at those cells, so they are not drawn misleadingly).
+    glon = _finite_coord(grd.geolon)
+    glat = _finite_coord(grd.geolat)
+    # Plot only the tracer-point scalar fields (velocities live on staggered points).
+    plot_fields = [v for v in ['tos', 'speed'] + ([ssh_name] if ssh_name else [])
+                   if 'mean_' + v in ds_out]
+    for var in plot_fields:
+      field = np.ma.masked_invalid(ds_out['mean_' + var].values)
+      xyplot(field, glon, glat, area=area,
+             save=outdir + str(casename) + '_' + var + '_mean.png',
+             suptitle='{} mean'.format(var),
+             title='{} {} to {}'.format(casename, start_date, end_date))
+
+  return ds_out
+
+
+def _finite_coord(a):
+  """Return ``a`` with any NaNs filled from nearest neighbours (for plotting only).
+
+  Grid coordinate arrays (geolon/geolat) can contain NaNs where land blocks were
+  eliminated.  matplotlib's ``pcolormesh`` refuses non-finite coordinates, so we
+  forward/back-fill along both axes.  Filled cells coincide with masked field values, so
+  they do not appear in the figure; this only makes the coordinate mesh well-defined.
+  """
+  arr = np.asarray(a, dtype=float)
+  if np.isfinite(arr).all():
+    return arr
+  df = pd.DataFrame(arr)
+  df = df.ffill(axis=1).bfill(axis=1).ffill(axis=0).bfill(axis=0)
+  return df.values
+
 
 def parseCommandLine():
   """

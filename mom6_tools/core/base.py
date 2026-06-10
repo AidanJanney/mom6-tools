@@ -1,9 +1,9 @@
 """The :class:`Diagnostic` base class.
 
-A diagnostic is a small object bound to a :class:`~mom6_tools.diagnostics.case.Case`.  It
+A diagnostic is a small object bound to a :class:`~mom6_tools.core.case.Case`.  It
 declares which model streams/variables it needs (``requires``) and implements its science
 in ``compute``; the base class adds a uniform ``run`` that applies the plot/save policy
-(see :mod:`mom6_tools.diagnostics.interactive`) and returns a mutable ``xarray`` result.
+(see :mod:`mom6_tools.core.interactive`) and returns a mutable ``xarray`` result.
 
 Two patterns are supported:
 
@@ -59,7 +59,7 @@ class Diagnostic:
         """Compute, then optionally plot and save, returning the result.
 
         ``plot`` and ``save`` accept ``True``/``False``/``"auto"`` (see
-        :func:`mom6_tools.diagnostics.interactive.resolve`).
+        :func:`mom6_tools.core.interactive.resolve`).
         """
         result = self.compute(**kwargs)
         if resolve(plot):

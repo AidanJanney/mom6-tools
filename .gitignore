@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Generated diagnostic outputs and dask worker logs (written into the CWD at run time)
+PNG/
+ncfiles/
+output/
+dask-worker.*

@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from mom6_tools.diagnostics import DataSource
+from mom6_tools.core import DataSource
 
 DIAGTABLES = Path(__file__).resolve().parents[1] / "packages" / "mom6-diagtables" / "tests" / "data"
 

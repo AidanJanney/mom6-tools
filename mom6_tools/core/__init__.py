@@ -3,11 +3,11 @@
 This subpackage holds the new building blocks that sit underneath the diagnostic
 scripts:
 
-* :class:`~mom6_tools.diagnostics.datasource.DataSource` - resolves a model-output
+* :class:`~mom6_tools.core.datasource.DataSource` - resolves a model-output
   *source* (a ``diag_config.yml``, a MOM6 ``diag_table``, or explicit files) to a
   uniform ``{stream -> dataset}`` interface, so diagnostics don't each re-implement
   path resolution and preprocessing.
-* :class:`~mom6_tools.diagnostics.cluster.Cluster` - a small context manager around
+* :class:`~mom6_tools.core.cluster.Cluster` - a small context manager around
   ``m6toolbox.request_workers`` for dask parallelism.
 
 On top of these sit the :class:`Case` facade and the :class:`Diagnostic` base class:

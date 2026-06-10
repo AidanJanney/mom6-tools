@@ -5,7 +5,7 @@ remember to tear the cluster down at the end of ``main()``.  :class:`Cluster` wr
 same helper so the setup/teardown can be expressed as a ``with`` block instead, which is
 easier to use correctly from the new object-oriented code and from notebooks::
 
-    from mom6_tools.diagnostics import Cluster
+    from mom6_tools.core import Cluster
 
     with Cluster(nw=6) as cl:
         ds = source.open("z", variables=["vmo"], parallel=cl.parallel)
@@ -41,7 +41,7 @@ class Cluster:
     ----------
     parallel : bool
         ``True`` if a cluster was started; pass this to
-        :meth:`DataSource.open(..., parallel=...) <mom6_tools.diagnostics.datasource.DataSource.open>`.
+        :meth:`DataSource.open(..., parallel=...) <mom6_tools.core.datasource.DataSource.open>`.
     cluster, client
         The dask-jobqueue cluster and ``Client`` objects, or ``None`` when running serially.
     """

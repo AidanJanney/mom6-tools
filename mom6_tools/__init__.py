@@ -14,7 +14,7 @@ from importlib.metadata import version, PackageNotFoundError
 # package anyway).  What stays deferred is the *per-diagnostic* machinery: each diagnostic's
 # heavy/optional imports (plotting, intake, the dask cluster) load on first use via the
 # registry, not at import time.
-from mom6_tools.diagnostics import Case
+from mom6_tools.core import Case
 
 #from MOM6grid import *
 #from section_transports import *

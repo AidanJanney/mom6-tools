@@ -1,6 +1,6 @@
 """The :class:`Case` facade - the central object users interact with.
 
-A ``Case`` wraps a :class:`~mom6_tools.diagnostics.datasource.DataSource` and exposes each
+A ``Case`` wraps a :class:`~mom6_tools.core.datasource.DataSource` and exposes each
 registered diagnostic as a method that returns a mutable ``xarray`` result::
 
     from mom6_tools import Case

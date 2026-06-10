@@ -16,6 +16,7 @@ __all__ = ["register", "get_diagnostic", "is_registered", "available"]
 # name -> "module:ClassName"
 _REGISTRY = {
     "moc": "mom6_tools.moc:MOC",
+    "surface": "mom6_tools.surface:Surface",
 }
 
 

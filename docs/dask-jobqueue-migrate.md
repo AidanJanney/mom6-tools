@@ -55,7 +55,7 @@ def get_cluster(scheduler='pbs', account=None, cores=1, processes=1,
   - Narrowed the import guard from `except:` to `except ImportError:` and dropped
     `ncar_jobqueue` from the warning text.
 
-### OO path — `mom6_tools/diagnostics/cluster.py`
+### OO path — `mom6_tools/core/cluster.py`
 - `Cluster.__init__(self, nw=0)` → `Cluster.__init__(self, nw=0, scheduler='pbs',
   **cluster_kwargs)`; `start()` forwards them to `request_workers`.
 - Docstrings updated from `NCARCluster` to dask-jobqueue wording.

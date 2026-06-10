@@ -11,8 +11,8 @@ from dask.distributed import Client
 from mom6_tools import m6plot
 from mom6_tools  import m6toolbox
 from mom6_tools.MOM6grid import MOM6grid
-from mom6_tools.diagnostics import Case, Cluster, Diagnostic
-from mom6_tools.diagnostics.interactive import resolve
+from mom6_tools.core import Case, Cluster, Diagnostic
+from mom6_tools.core.interactive import resolve
 
 def options():
   try: import argparse
