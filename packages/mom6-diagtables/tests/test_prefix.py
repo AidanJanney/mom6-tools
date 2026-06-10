@@ -28,9 +28,16 @@ def test_stream_from_prefix_custom_pattern():
 
 
 def test_stream_from_prefix_custom_pattern_no_match_falls_back():
-    # Pattern does not match; fallback strips date placeholders from the whole prefix.
+    # Pattern does not match; fallback returns the last dot-separated component.
     pattern = r"\.ocn\.h\.(?P<stream>[^%]+)"
-    assert stream_from_prefix("case.mom6.h.z%4yr-%2mo", pattern=pattern) == "case.mom6.h.z"
+    assert stream_from_prefix("case.mom6.h.z%4yr-%2mo", pattern=pattern) == "z"
+
+
+def test_stream_from_prefix_section_file_no_h():
+    # Transport-section files use "case.mom6.<name>" (no ".h."); fallback should give
+    # just the section name, not the full prefix.
+    assert stream_from_prefix("case.mom6.Florida_Cuba%4yr-%2mo") == "Florida_Cuba"
+    assert stream_from_prefix("case.mom6.Windward_Passage%4yr-%2mo") == "Windward_Passage"
 
 
 # -- infer_stream_names ----------------------------------------------------------

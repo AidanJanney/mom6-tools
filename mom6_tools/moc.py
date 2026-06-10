@@ -62,7 +62,7 @@ class MOC(Diagnostic):
   """
 
   name = 'moc'
-  requires = {'z': ['vmo', 'vhml', 'vhGM'], 'static': None, 'geom': None}
+  requires = {'z': ['vmo', 'vhml', 'vhGM'], 'static': None}
 
   def run(self, *, start_date=None, end_date=None, nw=0,
           plot='auto', save='auto', outdir='PNG/MOC/', ncdir='ncfiles', debug=False):

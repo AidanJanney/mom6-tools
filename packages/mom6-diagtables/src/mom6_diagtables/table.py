@@ -78,17 +78,6 @@ class DiagTable:
 
     # -- lookups -----------------------------------------------------------------
 
-    def file_names(self) -> List[str]:
-        """All output-file names, in table order."""
-        return [f.file_name for f in self.files]
-
-    def get_file(self, file_name: str) -> Optional[DiagFile]:
-        """Return the :class:`DiagFile` with ``file_name``, or ``None`` if not present."""
-        for f in self.files:
-            if f.file_name == file_name:
-                return f
-        return None
-
     def streams(self) -> Dict[str, "DiagFile"]:
         """Map each stream name to its :class:`DiagFile` using :func:`stream_from_prefix`.
 

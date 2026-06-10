@@ -141,12 +141,16 @@ class DataSource:
 
     @classmethod
     def from_diag_table(cls, diag_table_path, outdir=None, casename=None,
-                        start_date=None, end_date=None):
+                        start_date=None, end_date=None, geom=None):
         """Build by parsing a MOM6 ``diag_table``.
 
         Each stream in the table becomes a file glob (``prefix_to_glob``).  ``outdir``
         defaults to the directory containing the diag_table; pass it explicitly if the
         history files live elsewhere.
+
+        ``geom`` is an optional path to the ocean geometry file
+        (``ocean_geometry.nc``).  Required only when land-block elimination is enabled;
+        if omitted, ``grid()`` uses the static file alone.
         """
         from mom6_diagtables import parse_diag_table, prefix_to_glob
 
@@ -155,8 +159,10 @@ class DataSource:
             outdir = os.path.dirname(os.path.abspath(diag_table_path))
         streams = {
             stream: prefix_to_glob(dfile.file_name)
-            for stream, dfile in table.infer_streams().items()
+            for stream, dfile in table.streams().items()
         }
+        if geom is not None:
+            streams["geom"] = str(geom)
         return cls(
             casename=casename,
             outdir=outdir,

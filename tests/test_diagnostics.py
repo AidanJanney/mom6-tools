@@ -84,3 +84,46 @@ def test_run_all_collects_results(case):
 def test_unknown_diagnostic_attribute_raises(case):
     with pytest.raises(AttributeError):
         case.no_such_diagnostic
+
+
+# -- available_for / summary tests -----------------------------------------------
+
+class _NeedsAbsent(Diagnostic):
+    """Diagnostic that requires a stream that won't be in the fixture."""
+    name = "needs_absent"
+    requires = {"z": ["thetao"], "native": ["foo"]}
+
+    def compute(self, **kwargs):
+        pass
+
+
+def test_available_for_includes_when_streams_present(case):
+    registry.register("dummy", f"{__name__}:_Dummy")
+    assert "dummy" in case.available_for()
+
+
+def test_available_for_excludes_when_stream_missing(case):
+    registry.register("needs_absent", f"{__name__}:_NeedsAbsent")
+    # case only has 'native'; 'z' is absent -> needs_absent must be excluded
+    assert "needs_absent" not in case.available_for()
+
+
+def test_run_all_defaults_to_available_for(case):
+    """run_all() without only= should skip diagnostics with missing streams."""
+    registry.register("dummy", f"{__name__}:_Dummy")
+    registry.register("needs_absent", f"{__name__}:_NeedsAbsent")
+    results = case.run_all(plot=False, save=False, scale=1.0)
+    assert "dummy" in results
+    assert "needs_absent" not in results
+
+
+def test_summary_runs_without_error(case, capsys):
+    registry.register("dummy", f"{__name__}:_Dummy")
+    registry.register("needs_absent", f"{__name__}:_NeedsAbsent")
+    case.summary()
+    out = capsys.readouterr().out
+    assert "native" in out          # stream listed
+    assert "dummy" in out           # runnable diagnostic shown
+    assert "needs_absent" in out    # skipped diagnostic shown
+    assert "ok" in out
+    assert "skip" in out

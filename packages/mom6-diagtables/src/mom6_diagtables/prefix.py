@@ -62,8 +62,11 @@ def stream_from_prefix(prefix: str, pattern: str = _CESM_STREAM_PATTERN) -> str:
     match = re.search(pattern, prefix)
     if match:
         return match.group("stream")
-    # Fallback: strip date placeholders from the whole prefix.
-    return prefix.split("%", 1)[0]
+    # Fallback: strip date placeholders, then take the last dot-separated component so
+    # section files like "case.mom6.Florida_Cuba%4yr" yield "Florida_Cuba", not the full
+    # prefix.
+    base = prefix.split("%", 1)[0]
+    return base.rsplit(".", 1)[-1] if "." in base else base
 
 
 def infer_stream_names(prefixes: Iterable[str]) -> Dict[str, str]:
