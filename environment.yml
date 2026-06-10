@@ -1,4 +1,4 @@
-name: mom6-tools
+name: mom6-tools-refactor
 channels:
   - conda-forge
   - defaults
@@ -14,6 +14,7 @@ dependencies:
   - pyyaml
   - xarray
   - dask
+  - dask-jobqueue
   - pytest
   - netCDF4
   - matplotlib
@@ -34,7 +35,6 @@ dependencies:
   - pip:
     - setuptools-scm
     - vcs-versioning
-    - ncar-jobqueue @ git+https://github.com/NCAR/ncar-jobqueue
     - momlevel @ git+https://github.com/jkrasting/momlevel
     - xwavelet @ git+https://github.com/jkrasting/xwavelet
     - papermill

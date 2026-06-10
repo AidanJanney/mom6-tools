@@ -7,7 +7,6 @@ import warnings, dask, intake
 from datetime import datetime
 import xarray as xr
 from mom6_tools.m6toolbox import cime_xmlquery
-from ncar_jobqueue import NCARCluster
 from dask.distributed import Client
 from mom6_tools import m6plot
 from mom6_tools  import m6toolbox

@@ -237,25 +237,74 @@ def shiftgrid(lon0,datain,lonsin,start=True,cyclic=360.0):
     dataout[...,i0_shift:] = datain[...,start_idx:i0+start_idx]
     return dataout,lonsout
 
-def request_workers(nw):
+# Supported dask-jobqueue cluster types, keyed by short scheduler name.  PBS is the
+# default because that is what the NCAR machines (Casper/Derecho) run.  This replaces the
+# former dependency on ncar-jobqueue's NCARCluster, which auto-detected the machine and
+# wrapped these same dask-jobqueue classes.
+_SCHEDULERS = {
+    'pbs': 'PBSCluster',
+    'slurm': 'SLURMCluster',
+    'sge': 'SGECluster',
+    'lsf': 'LSFCluster',
+}
+
+def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
+                memory='25GB', walltime='01:00:00', queue='casper',
+                interface=None, **kwargs):
   '''
-  If nw > 0, load appropriate modules, requests nw workers, and returns parallel = True,
-  and objects for cluster and client. Otherwise, do nothing and returns parallel = False.
+  Create and return a dask-jobqueue HPC cluster.
+
+  This is the drop-in replacement for ncar-jobqueue's ``NCARCluster``.  Rather than
+  auto-detecting the machine, it builds a dask-jobqueue cluster directly.  The defaults
+  target NCAR Casper/Derecho PBS; override any of them (or pass extra dask-jobqueue
+  keywords) as needed.
+
+  Parameters
+  ----------
+  scheduler : str, optional
+    Which scheduler to use: ``'pbs'`` (default), ``'slurm'``, ``'sge'`` or ``'lsf'``.
+  account : str, optional
+    Project/account charged for the jobs (PBS ``-A``).  Defaults to ``'NCGD0011'``.
+  cores, processes, memory, walltime, queue : optional
+    Standard dask-jobqueue worker-job settings; defaults mirror the NCAR Casper PBS
+    configuration.
+  interface : str, optional
+    Network interface for scheduler/worker communication (e.g. ``'ib0'`` for InfiniBand
+    on NCAR compute nodes).  Left unset by default because the interface is also bound by
+    the local scheduler, and login nodes may not expose ``ib0``; pass it explicitly when
+    running where that interface exists.
+  **kwargs
+    Forwarded verbatim to the underlying dask-jobqueue cluster constructor.
+  '''
+  name = scheduler.lower()
+  if name not in _SCHEDULERS:
+    raise ValueError(
+        "Unknown scheduler {!r}; choose one of {}".format(scheduler, sorted(_SCHEDULERS)))
+  import dask_jobqueue
+  cluster_cls = getattr(dask_jobqueue, _SCHEDULERS[name])
+  return cluster_cls(account=account, cores=cores, processes=processes, memory=memory,
+                     walltime=walltime, queue=queue, interface=interface, **kwargs)
+
+def request_workers(nw, scheduler='pbs', **cluster_kwargs):
+  '''
+  If nw > 0, request nw workers and return parallel = True together with the cluster and
+  client objects.  Otherwise do nothing and return parallel = False.
+
+  ``scheduler`` selects the dask-jobqueue cluster type ('pbs' by default); any extra
+  keyword arguments are forwarded to :func:`get_cluster`.
   '''
   if nw>0:
     try:
-      from ncar_jobqueue import NCARCluster
       import dask
       from dask.distributed import Client
-    except:
+    except ImportError:
       nw = 0
-      warnings.warn("Unable to import the following: ncar_jobqueue, dask and dask.distributed. \
-             The script will run in serial. Please install these modules if you want \
-             to run in parallel.")
+      warnings.warn("Unable to import dask and dask.distributed. The script will run in "
+             "serial. Please install these modules if you want to run in parallel.")
 
   if nw>0:
     print('Requesting {} workers... \n'.format(nw))
-    cluster = NCARCluster(project='NCGD0011')
+    cluster = get_cluster(scheduler=scheduler, **cluster_kwargs)
     cluster.scale(nw)
     dask.config.set({'distributed.dashboard.link': '/proxy/{port}/status'})
     client = Client(cluster)

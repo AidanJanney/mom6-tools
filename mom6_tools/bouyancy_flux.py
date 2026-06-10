@@ -7,7 +7,7 @@ import warnings, os, yaml, argparse
 import pandas as pd
 import dask
 from datetime import datetime, date
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from dask.distributed import Client
 from mom6_tools.DiagsCase import DiagsCase
 from mom6_tools.m6toolbox import add_global_attrs
@@ -81,7 +81,7 @@ def driver(args):
   parallel = False
   if nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(args.number_of_workers)
     client = Client(cluster)
 

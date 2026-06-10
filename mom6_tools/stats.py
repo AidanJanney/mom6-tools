@@ -16,7 +16,7 @@ import pandas as pd
 import getpass
 from datetime import datetime
 from distributed import Client
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from collections import OrderedDict
 import yaml, os
 
@@ -580,7 +580,7 @@ def extract_time_series(fname, variables, area, args):
   parallel = False
   if args.nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(args.nw)
     client = Client(cluster)
 
@@ -652,7 +652,7 @@ def xystats(fname, variables, grd, basins, args):
   parallel = False
   if args.nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(args.nw)
     client = Client(cluster)
 

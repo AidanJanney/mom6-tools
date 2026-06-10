@@ -8,7 +8,7 @@ from datetime import datetime
 import xarray as xr
 from xgcm import Grid
 from mom6_tools.m6toolbox import cime_xmlquery
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from dask.distributed import Client
 from mom6_tools import m6plot
 from mom6_tools  import m6toolbox
@@ -107,7 +107,7 @@ def main():
   parallel = False
   if nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(nw)
     client = Client(cluster)
 

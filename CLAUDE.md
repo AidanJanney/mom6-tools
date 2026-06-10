@@ -17,7 +17,7 @@ Python 3.11. The package is `mom6_tools` (underscore); the distribution is `mom6
 
 The `mom6-tools` conda env lives at `/glade/work/ajanney/conda-envs/mom6-tools` (not `~/.conda/envs`). Run its interpreter directly, e.g. `/glade/work/ajanney/conda-envs/mom6-tools/bin/python -m pytest`; the bare `python3` on PATH is the system Casper Python and lacks the project deps.
 
-Two dependency lists must be kept in sync when adding packages: `environment.yml` (conda, authoritative for the dev env) and `requirements.txt` (used by CI and `setup.py`). Some deps install only from git: `ncar_jobqueue`, `momlevel`, `xwavelet`.
+Two dependency lists must be kept in sync when adding packages: `environment.yml` (conda, authoritative for the dev env) and `requirements.txt` (used by CI and `setup.py`). Some deps install only from git: `momlevel`, `xwavelet`. HPC clusters use `dask-jobqueue` directly (conda-forge), not the former `ncar-jobqueue` wrapper.
 
 ### packages/ — in-repo subpackages
 
@@ -61,7 +61,7 @@ Scripts resolve the actual run directory and casename from CESM at runtime via `
 
 ### Cluster / parallelism
 
-dask parallelism is gated by `-nw`. `m6toolbox.request_workers(nw)` is the shared helper: for `nw > 0` it creates an `NCARCluster` (project hardcoded `NCGD0011` there), scales it, and returns `(parallel, cluster, client)`; for `nw == 0` it runs serially. Several scripts also construct `NCARCluster`/`Client` inline. Anything cluster-related requires `ncar_jobqueue` config at `~/.config/dask/ncar-jobqueue.yaml` with a valid project account (see README notes).
+dask parallelism is gated by `-nw`. `m6toolbox.get_cluster(scheduler='pbs', account='NCGD0011', ...)` is the single factory that builds a `dask_jobqueue` cluster (PBS by default; `'slurm'`/`'sge'`/`'lsf'` also supported via the `scheduler=` arg). `m6toolbox.request_workers(nw, scheduler='pbs', **kw)` is the shared helper: for `nw > 0` it calls `get_cluster`, scales it, and returns `(parallel, cluster, client)`; for `nw == 0` it runs serially. The standalone scripts construct a cluster inline via `get_cluster()` (replacing the former bare `NCARCluster()`); the OO path uses `diagnostics.Cluster(nw, scheduler=..., **kw)`. Defaults target NCAR Casper PBS (`cores=1, memory='25GB', queue='casper'`); override `account=` and the rest as needed. `interface` is unset by default (login nodes may lack `ib0`, and the interface is also bound by the local scheduler) — pass `interface='ib0'` when running where InfiniBand exists. This replaces the former `ncar-jobqueue`/`NCARCluster` dependency — no `~/.config/dask/ncar-jobqueue.yaml` is required, though `dask_jobqueue` still honours `~/.config/dask/jobqueue.yaml` for any unset options.
 
 ### Shared utility modules (not CLI scripts)
 

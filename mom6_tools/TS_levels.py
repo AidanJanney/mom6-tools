@@ -8,7 +8,7 @@ import pandas as pd
 from collections import OrderedDict
 import dask
 from datetime import datetime, date
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from dask.distributed import Client
 from mom6_tools.m6toolbox import add_global_attrs, genBasinMasks, weighted_temporal_mean_vars
 from mom6_tools.m6toolbox import cime_xmlquery
@@ -106,7 +106,7 @@ def driver(args):
   parallel = False
   if nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(nw)
     client = Client(cluster)
 

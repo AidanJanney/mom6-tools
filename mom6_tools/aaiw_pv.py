@@ -6,7 +6,7 @@ import numpy as np
 import warnings, dask, netCDF4, intake
 from datetime import datetime, date
 import xarray as xr
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from dask.distributed import Client
 import momlevel as ml
 from mom6_tools import m6plot
@@ -97,7 +97,7 @@ def main(stream=False):
   parallel = False
   if nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(nw)
     client = Client(cluster)
 

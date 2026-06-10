@@ -8,7 +8,7 @@ import nc_time_axis
 import matplotlib.pyplot as plt
 import os, yaml
 from mom6_tools.m6toolbox import cime_xmlquery
-from ncar_jobqueue import NCARCluster
+from mom6_tools.m6toolbox import get_cluster
 from dask.distributed import Client
 from datetime import datetime
 
@@ -152,7 +152,7 @@ def main(stream=False):
   parallel = False
   if nw > 1:
     parallel = True
-    cluster = NCARCluster()
+    cluster = get_cluster()
     cluster.scale(nw)
     client = Client(cluster)
 
