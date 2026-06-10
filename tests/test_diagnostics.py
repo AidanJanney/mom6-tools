@@ -28,6 +28,15 @@ class _Dummy(Diagnostic):
         self.case._saved = True
 
 
+@pytest.fixture(autouse=True)
+def _restore_registry():
+    """Snapshot and restore the global registry so test registrations don't leak."""
+    saved = dict(registry._REGISTRY)
+    yield
+    registry._REGISTRY.clear()
+    registry._REGISTRY.update(saved)
+
+
 @pytest.fixture
 def case():
     foo = xr.DataArray(np.arange(4.0), dims=["x"], name="foo")
@@ -106,6 +115,29 @@ def test_available_for_excludes_when_stream_missing(case):
     registry.register("needs_absent", f"{__name__}:_NeedsAbsent")
     # case only has 'native'; 'z' is absent -> needs_absent must be excluded
     assert "needs_absent" not in case.available_for()
+
+
+class _NeedsVar(Diagnostic):
+    """Requires a variable ('bar') that the fixture's 'native' stream lacks."""
+    name = "needs_var"
+    requires = {"native": ["bar"]}
+
+    def compute(self, **kwargs):
+        pass
+
+
+def test_available_for_excludes_when_variable_missing(case):
+    registry.register("needs_var", f"{__name__}:_NeedsVar")
+    # 'native' stream is present but only has 'foo'; 'bar' is missing -> excluded.
+    assert "needs_var" not in case.available_for()
+
+
+def test_summary_reports_missing_variable(case, capsys):
+    registry.register("needs_var", f"{__name__}:_NeedsVar")
+    case.summary()
+    out = capsys.readouterr().out
+    assert "needs_var" in out and "skip" in out
+    assert "native:bar" in out      # the specific missing variable is named
 
 
 def test_run_all_defaults_to_available_for(case):

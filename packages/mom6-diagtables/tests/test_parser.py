@@ -118,14 +118,14 @@ def test_yaml_file_and_field_counts():
 
 def test_yaml_streams():
     table = parse_diag_table_yaml(GLOBAL_YAML)
-    streams = table.infer_streams()
+    streams = table.streams()
     for expected in ("z", "native", "sfc", "static"):
         assert expected in streams
 
 
 def test_yaml_file_attributes():
     table = parse_diag_table_yaml(GLOBAL_YAML)
-    z = table.infer_streams()["z"]
+    z = table.streams()["z"]
     assert isinstance(z, DiagFile)
     assert z.output_freq == 1
     assert z.output_freq_units == "months"
@@ -194,3 +194,28 @@ def test_comments_and_blank_lines_are_ignored():
     assert len(table.files) == 1
     assert len(table.fields) == 1
     assert table.fields[0].output_name == "thetao"
+
+
+# -- streams() overrides ----------------------------------------------------------
+
+def test_streams_default_heuristic():
+    # Default (no args) uses the common-prefix heuristic.
+    table = parse_diag_table(GLOBAL)
+    streams = table.streams()
+    for expected in ("z", "native", "rho2", "sfc", "static"):
+        assert expected in streams
+
+
+def test_streams_pattern_override():
+    table = parse_diag_table(GLOBAL)
+    streams = table.streams(pattern=r"\.mom6\.h\.(?P<stream>[^%]+)")
+    assert "z" in streams and "native" in streams
+    assert streams["z"].file_name.endswith("z%4yr-%2mo")
+
+
+def test_streams_mapping_override():
+    table = parse_diag_table(GLOBAL)
+    first = table.files[0].file_name
+    streams = table.streams(mapping={first: "CUSTOM"})
+    assert "CUSTOM" in streams
+    assert streams["CUSTOM"].file_name == first

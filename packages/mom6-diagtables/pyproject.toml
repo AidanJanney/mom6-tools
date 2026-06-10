@@ -16,9 +16,9 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "License :: OSI Approved :: Apache Software License",
 ]
-# Intentionally has NO runtime dependencies: this package is pure-Python and
-# must be usable on its own, without mom6-tools, xarray, or CESM installed.
-dependencies = []
+# Only PyYAML (for the YAML diag_table reader).  Deliberately no dependency on
+# mom6-tools, xarray, or CESM, so this package is usable on its own.
+dependencies = ["pyyaml"]
 
 [project.optional-dependencies]
 test = ["pytest"]

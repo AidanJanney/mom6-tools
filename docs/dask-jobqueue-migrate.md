@@ -16,10 +16,14 @@ A single factory replaces every `NCARCluster()` construction
 (`mom6_tools/m6toolbox.py`):
 
 ```python
-def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
+def get_cluster(scheduler='pbs', account=None, cores=1, processes=1,
                 memory='25GB', walltime='01:00:00', queue='casper',
                 interface=None, **kwargs):
     ...
+    if account is None:
+        account = os.environ.get('PBS_ACCOUNT')
+    if not account:
+        raise ValueError("No account/project specified. Pass account=... or set PBS_ACCOUNT.")
     import dask_jobqueue
     cluster_cls = getattr(dask_jobqueue, _SCHEDULERS[scheduler.lower()])
     return cluster_cls(account=account, cores=cores, processes=processes, memory=memory,
@@ -29,8 +33,11 @@ def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
 - **PBS is the default.** `scheduler=` selects the cluster type via the module-level map
   `_SCHEDULERS = {'pbs': 'PBSCluster', 'slurm': 'SLURMCluster', 'sge': 'SGECluster',
   'lsf': 'LSFCluster'}`. An unknown scheduler raises `ValueError`.
-- **Defaults mirror the old NCAR Casper PBS config** (`cores=1`, `memory='25GB'`,
-  `queue='casper'`, `walltime='01:00:00'`, `account='NCGD0011'`).
+- **`account` is required** (no hardcoded default): passed explicitly, else read from the
+  `PBS_ACCOUNT` env var, else `ValueError`. There is no safe default — jobs bill a real
+  allocation.
+- **Worker-job defaults mirror the old NCAR Casper PBS config** (`cores=1`,
+  `memory='25GB'`, `queue='casper'`, `walltime='01:00:00'`).
 - **`interface` defaults to `None`, not `'ib0'`.** `dask-jobqueue` binds the interface on
   the *local scheduler* as well as the workers, and login nodes may not expose `ib0`
   (observed: a Casper login node only had `lo`/`mgt`/`ext`). Pass `interface='ib0'`
@@ -86,16 +93,15 @@ Affected: `EquatorialOceanMetrics`, `Equatorial_comparison`, `TS_drift`, `TS_lev
   `dask-jobqueue`.
 - `environment.yml`: added conda dep `- dask-jobqueue`; removed the pip
   `ncar-jobqueue @ git+...` line.
-- `ci/travis-conda-environment.yml`: added conda `- dask-jobqueue`; removed pip
-  `ncar_jobqueue`.
 - `CLAUDE.md`: updated the "Cluster / parallelism" and dependency sections.
+- (`ci/travis-conda-environment.yml` was subsequently deleted — Travis is retired.)
 
 ## Caveats / behavior changes
 
 - The standalone scripts previously called the bare `NCARCluster()`, which read the
-  account from `ncar-jobqueue.yaml` (often `P93300012`). They now use `get_cluster()`'s
-  default `account='NCGD0011'` — the same account the central `request_workers` already
-  hardcoded. Override `account=` if you charge to a different project.
+  account from `ncar-jobqueue.yaml`. They now use `get_cluster()`, where `account` is
+  **required**: pass it explicitly or set `PBS_ACCOUNT`, otherwise a `ValueError` is
+  raised. There is no hardcoded default.
 - No `~/.config/dask/ncar-jobqueue.yaml` is needed anymore. `dask-jobqueue` still honours
   `~/.config/dask/jobqueue.yaml` for any options left unset.
 
@@ -106,9 +112,10 @@ Affected: `EquatorialOceanMetrics`, `Equatorial_comparison`, `TS_drift`, `TS_lev
 ```
 
 - 72 passed (the two `ncar_jobqueue` pkg_resources deprecation warnings are gone).
-- `get_cluster()` constructs a real `PBSCluster`; its `job_script()` contains the expected
-  directives: `#PBS -q casper`, `#PBS -A NCGD0011`,
-  `#PBS -l select=1:ncpus=1:mem=24GB`, `#PBS -l walltime=01:00:00`.
+- `get_cluster(account='PXXXXXXXX')` constructs a real `PBSCluster`; its `job_script()`
+  contains the expected directives: `#PBS -q casper`, `#PBS -A PXXXXXXXX`,
+  `#PBS -l select=1:ncpus=1:mem=24GB`, `#PBS -l walltime=01:00:00`. With no `account` and
+  no `PBS_ACCOUNT` it raises `ValueError`.
 - `grep -rn "ncar_jobqueue\|NCARCluster"` across the tree returns only documentation
   references (this file, `CLAUDE.md`, the explanatory comments in `m6toolbox.py`, and a
   historical note in `REFACTOR_STATUS.md`) — no live code uses remain.

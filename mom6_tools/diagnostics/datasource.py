@@ -141,12 +141,19 @@ class DataSource:
 
     @classmethod
     def from_diag_table(cls, diag_table_path, outdir=None, casename=None,
-                        start_date=None, end_date=None, geom=None):
+                        start_date=None, end_date=None, geom=None,
+                        stream_pattern=None, stream_mapping=None):
         """Build by parsing a MOM6 ``diag_table``.
 
         Each stream in the table becomes a file glob (``prefix_to_glob``).  ``outdir``
         defaults to the directory containing the diag_table; pass it explicitly if the
         history files live elsewhere.
+
+        Stream names come from :meth:`DiagTable.streams`, which by default uses the
+        convention-agnostic common-prefix heuristic.  Override per-table with
+        ``stream_pattern`` (a regex with a ``(?P<stream>...)`` group, e.g. the CESM
+        ``\\.mom6\\.h\\.(?P<stream>[^%]+)``) or ``stream_mapping``
+        (an explicit ``{file_name: stream_name}`` dict).
 
         ``geom`` is an optional path to the ocean geometry file
         (``ocean_geometry.nc``).  Required only when land-block elimination is enabled;
@@ -159,7 +166,8 @@ class DataSource:
             outdir = os.path.dirname(os.path.abspath(diag_table_path))
         streams = {
             stream: prefix_to_glob(dfile.file_name)
-            for stream, dfile in table.streams().items()
+            for stream, dfile in table.streams(pattern=stream_pattern,
+                                               mapping=stream_mapping).items()
         }
         if geom is not None:
             streams["geom"] = str(geom)
@@ -196,6 +204,21 @@ class DataSource:
     def has(self, stream: str) -> bool:
         """Whether ``stream`` is defined on this source."""
         return stream in self.streams
+
+    def variables(self, stream: str) -> set:
+        """Return the data-variable names available in ``stream``.
+
+        For an in-memory ``Dataset`` this reads its ``data_vars`` directly; for files it
+        opens only the FIRST matching file (not the whole ``open_mfdataset`` set), so it is
+        cheap enough to call from :meth:`Case.available_for`.  Raises if the stream is
+        undefined or its files cannot be opened - callers that want a soft check should
+        catch the exception.
+        """
+        spec = self._spec(stream)
+        if isinstance(spec, xr.Dataset):
+            return set(spec.data_vars)
+        with xr.open_dataset(self._single_path(stream), decode_times=False) as ds:
+            return set(ds.data_vars)
 
     def open(self, stream, variables=None, parallel=False, fill_missing=True,
              time_slice=False, **open_kwargs):

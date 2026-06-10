@@ -72,18 +72,43 @@ class Case:
         """Return an instantiated Diagnostic for ``name`` (bound to this case)."""
         return registry.get_diagnostic(name)(self)
 
-    def available_for(self) -> list:
-        """Registered diagnostics whose required streams are all present in this source.
+    def _missing_requirements(self, reqs):
+        """Return ``(missing_streams, missing_vars)`` for a ``requires`` mapping.
 
-        A diagnostic is included only if every stream named in its ``requires`` attribute
-        exists on the :class:`~mom6_tools.diagnostics.datasource.DataSource`.  Diagnostics
-        with no ``requires`` are always included.
+        A required stream is missing if it is not defined on the source, or if its files
+        cannot be opened to verify variables.  A required variable is missing if its stream
+        is present but the variable is not among that stream's data variables.  ``reqs``
+        values of ``None`` (or an empty list) mean "the whole stream, no specific vars".
+        """
+        missing_streams, missing_vars = [], []
+        for stream, wanted in reqs.items():
+            if not self.source.has(stream):
+                missing_streams.append(stream)
+                continue
+            if not wanted:
+                continue
+            try:
+                present = self.source.variables(stream)
+            except Exception:
+                # Can't read the stream's files to verify variables - treat as unavailable.
+                missing_streams.append(stream)
+                continue
+            missing_vars += [f"{stream}:{v}" for v in wanted if v not in present]
+        return missing_streams, missing_vars
+
+    def available_for(self) -> list:
+        """Registered diagnostics whose requirements are all satisfied by this source.
+
+        A diagnostic is included only if every stream in its ``requires`` exists *and*
+        every variable it lists for that stream is present.  Diagnostics with no
+        ``requires`` are always included.
         """
         result = []
         for name in registry.available():
             cls = registry.get_diagnostic(name)
             reqs = getattr(cls, "requires", {})
-            if all(self.source.has(s) for s in reqs):
+            missing_streams, missing_vars = self._missing_requirements(reqs)
+            if not missing_streams and not missing_vars:
                 result.append(name)
         return result
 
@@ -106,9 +131,14 @@ class Case:
         for name in all_names:
             cls = registry.get_diagnostic(name)
             reqs = getattr(cls, "requires", {})
-            missing = [s for s in reqs if not self.source.has(s)]
-            if missing:
-                print(f"  {name:<20} skip  (missing streams: {', '.join(sorted(missing))})")
+            missing_streams, missing_vars = self._missing_requirements(reqs)
+            if missing_streams or missing_vars:
+                parts = []
+                if missing_streams:
+                    parts.append(f"streams: {', '.join(sorted(missing_streams))}")
+                if missing_vars:
+                    parts.append(f"vars: {', '.join(sorted(missing_vars))}")
+                print(f"  {name:<20} skip  (missing {'; '.join(parts)})")
             else:
                 print(f"  {name:<20} ok")
 

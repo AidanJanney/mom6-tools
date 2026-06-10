@@ -9,9 +9,11 @@ It relies on the following python packages:
 
 from importlib.metadata import version, PackageNotFoundError
 
-# Object-oriented entry point (the ongoing refactor).  The Case facade pulls in only the
-# light data layer; individual diagnostics import their heavy dependencies on first use
-# via the registry, so this stays cheap.
+# Object-oriented entry point (the ongoing refactor).  Importing Case pulls in the data
+# layer, which depends on xarray/numpy (the scientific stack is a hard dependency of this
+# package anyway).  What stays deferred is the *per-diagnostic* machinery: each diagnostic's
+# heavy/optional imports (plotting, intake, the dask cluster) load on first use via the
+# registry, not at import time.
 from mom6_tools.diagnostics import Case
 
 #from MOM6grid import *

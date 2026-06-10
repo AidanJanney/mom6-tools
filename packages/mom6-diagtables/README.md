@@ -1,7 +1,8 @@
 # mom6-diagtables
 
-A small, dependency-free Python package for reading [MOM6](https://github.com/mom-ocean/MOM6)
-/ FMS `diag_table` files into typed Python objects.
+A small Python package for reading [MOM6](https://github.com/mom-ocean/MOM6) / FMS
+`diag_table` files (both the legacy ASCII and the modern YAML formats) into typed Python
+objects.  Its only runtime dependency is PyYAML.
 
 It is developed as part of [mom6-tools](https://github.com/NCAR/mom6-tools) but has **no
 dependency on mom6-tools** (or xarray, or CESM) and can be installed and used on its own.
@@ -25,10 +26,12 @@ table.title                       # the title string from line 1
 table.base_date                   # [1, 1, 1, 0, 0, 0]
 
 for f in table.files:
-    print(f.file_name, f.output_freq, f.output_freq_units, f.stream)
+    print(f.file_name, f.output_freq, f.output_freq_units)
 
 # Look things up:
 table.streams()                   # {"z": DiagFile, "native": DiagFile, ...}
+                                  #   default: common-prefix heuristic; override with
+                                  #   streams(pattern=...) or streams(mapping=...)
 table.fields_for(some_file_name)  # [DiagField, ...]
 table.prefix_for_field("thetao")  # the file prefix that contains 'thetao'
 ```

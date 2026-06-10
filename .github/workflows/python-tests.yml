@@ -28,6 +28,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        # mom6-diagtables is an in-repo subpackage; install it editable so its tests
+        # (packages/mom6-diagtables/tests) and DataSource.from_diag_table can import it.
+        # Not added to requirements.txt because setup.py parses that into install_requires,
+        # where an editable path is not a valid specifier.
+        pip install -e ./packages/mom6-diagtables
 
     # Step 4: Run pytest
     - name: Run pytest

@@ -11,8 +11,6 @@ https://mom6.readthedocs.io/en/main/api/generated/pages/Diagnostics.html
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from .prefix import stream_from_prefix
-
 __all__ = ["DiagFile", "DiagField", "DiagTable"]
 
 
@@ -37,11 +35,6 @@ class DiagFile:
     start_time: Optional[str] = None
     file_duration: Optional[int] = None
     file_duration_units: Optional[str] = None
-
-    @property
-    def stream(self) -> str:
-        """Short stream name (e.g. ``z``, ``native``, ``static``) from the file name."""
-        return stream_from_prefix(self.file_name)
 
 
 @dataclass
@@ -78,32 +71,37 @@ class DiagTable:
 
     # -- lookups -----------------------------------------------------------------
 
-    def streams(self) -> Dict[str, "DiagFile"]:
-        """Map each stream name to its :class:`DiagFile` using :func:`stream_from_prefix`.
+    def streams(self, pattern: Optional[str] = None,
+                mapping: Optional[Dict[str, str]] = None) -> Dict[str, "DiagFile"]:
+        """Map each stream name to its :class:`DiagFile`.
 
-        Stream names are derived from the CESM ``<case>.mom6.h.<stream>`` convention.
-        For non-standard naming conventions use :meth:`infer_streams` instead.
+        How the short stream name is derived from each file name depends on the arguments:
 
-        If two files share a stream name (unusual) the last one wins.
+        * ``mapping`` given - an explicit ``{file_name: stream_name}`` dict; the most
+          precise option when the names don't follow any regular pattern.  File names not
+          in the mapping fall back to the heuristic below.
+        * ``pattern`` given - a regular expression with a ``(?P<stream>...)`` group applied
+          per file (see :func:`~mom6_diagtables.prefix.stream_from_prefix`); use this for a
+          known convention, e.g. CESM's ``\\.mom6\\.h\\.(?P<stream>[^%]+)``.
+        * neither (default) - the convention-agnostic common-prefix heuristic
+          (:func:`~mom6_diagtables.prefix.infer_stream_names`), which strips the longest
+          shared prefix (e.g. ``ocean_cobalt_sfc``/``ocean_cobalt_btm`` -> ``sfc``/``btm``).
+
+        If two files resolve to the same stream name (unusual) the last one wins.
         """
-        return {f.stream: f for f in self.files}
-
-    def infer_streams(self) -> Dict[str, "DiagFile"]:
-        """Map each stream name to its :class:`DiagFile` using auto-detection.
-
-        Finds the longest common prefix shared by all file names and strips it to
-        produce stream names.  Works for both the CESM convention and non-standard
-        conventions such as BGC output (e.g. ``ocean_cobalt_sfc``, ``ocean_cobalt_btm``
-        → streams ``sfc``, ``btm``).  Falls back gracefully to the full base name when
-        no common prefix is found.
-
-        Use this instead of :meth:`streams` when the diag_table does not follow the
-        ``.mom6.h.<stream>`` pattern.
-        """
-        from .prefix import infer_stream_names
-        name_to_prefix = infer_stream_names([f.file_name for f in self.files])
-        prefix_to_file = {f.file_name: f for f in self.files}
-        return {stream: prefix_to_file[prefix] for stream, prefix in name_to_prefix.items()}
+        if mapping is not None:
+            from .prefix import stream_from_prefix
+            names = [mapping.get(f.file_name) or stream_from_prefix(f.file_name)
+                     for f in self.files]
+        elif pattern is not None:
+            from .prefix import stream_from_prefix
+            names = [stream_from_prefix(f.file_name, pattern) for f in self.files]
+        else:
+            from .prefix import infer_stream_names
+            name_to_prefix = infer_stream_names([f.file_name for f in self.files])
+            prefix_to_name = {prefix: name for name, prefix in name_to_prefix.items()}
+            names = [prefix_to_name[f.file_name] for f in self.files]
+        return {name: f for name, f in zip(names, self.files)}
 
     def fields_for(self, file_name: str) -> List[DiagField]:
         """All fields written to ``file_name``."""

@@ -248,7 +248,7 @@ _SCHEDULERS = {
     'lsf': 'LSFCluster',
 }
 
-def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
+def get_cluster(scheduler='pbs', account=None, cores=1, processes=1,
                 memory='25GB', walltime='01:00:00', queue='casper',
                 interface=None, **kwargs):
   '''
@@ -264,7 +264,9 @@ def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
   scheduler : str, optional
     Which scheduler to use: ``'pbs'`` (default), ``'slurm'``, ``'sge'`` or ``'lsf'``.
   account : str, optional
-    Project/account charged for the jobs (PBS ``-A``).  Defaults to ``'NCGD0011'``.
+    Project/account charged for the jobs (PBS ``-A``).  Required: if not passed, it is
+    read from the ``PBS_ACCOUNT`` environment variable, and a :class:`ValueError` is
+    raised if neither is set (there is no safe default - jobs bill a real allocation).
   cores, processes, memory, walltime, queue : optional
     Standard dask-jobqueue worker-job settings; defaults mirror the NCAR Casper PBS
     configuration.
@@ -276,10 +278,17 @@ def get_cluster(scheduler='pbs', account='NCGD0011', cores=1, processes=1,
   **kwargs
     Forwarded verbatim to the underlying dask-jobqueue cluster constructor.
   '''
+  import os
   name = scheduler.lower()
   if name not in _SCHEDULERS:
     raise ValueError(
         "Unknown scheduler {!r}; choose one of {}".format(scheduler, sorted(_SCHEDULERS)))
+  if account is None:
+    account = os.environ.get('PBS_ACCOUNT')
+  if not account:
+    raise ValueError(
+        "No account/project specified. Pass account='PXXXXXXXX' to get_cluster "
+        "(or request_workers/Cluster), or set the PBS_ACCOUNT environment variable.")
   import dask_jobqueue
   cluster_cls = getattr(dask_jobqueue, _SCHEDULERS[name])
   return cluster_cls(account=account, cores=cores, processes=processes, memory=memory,
@@ -297,10 +306,11 @@ def request_workers(nw, scheduler='pbs', **cluster_kwargs):
     try:
       import dask
       from dask.distributed import Client
+      import dask_jobqueue  # noqa: F401 - presence check; get_cluster imports it again
     except ImportError:
       nw = 0
-      warnings.warn("Unable to import dask and dask.distributed. The script will run in "
-             "serial. Please install these modules if you want to run in parallel.")
+      warnings.warn("Unable to import dask, dask.distributed and dask_jobqueue. The script "
+             "will run in serial. Please install these modules to run in parallel.")
 
   if nw>0:
     print('Requesting {} workers... \n'.format(nw))
