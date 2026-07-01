@@ -16,7 +16,7 @@ Fnames:
   sfc:    '.mom6.h.sfc.????-??.nc'
   ice:    '.cice.h.????-??.nc'
   static: '.mom6.h.static.nc'
-  geom:   '.mom6.h.ocean_geometry.nc'
+  # geom:   '.mom6.h.ocean_geometry.nc'
 
 # sections where transports are computed online
 # Format: file name stream (e.g., Drake_Passage), transport
