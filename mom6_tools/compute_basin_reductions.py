@@ -26,7 +26,7 @@ def parse_args():
         "over specified basin masks to extract and average/integrate the variable within each region.")
     parser.add_argument('config_yml', type=str, help='Path to YAML configuration file.')
     parser.add_argument('-v', '--variable', type=str, default='', help='Variable to be processed (default is empty, it will process all 2D variables on tracer points).')
-    parser.add_argument('-s', '--stream', type=str, default='.mom6.h.native.????-??.nc', help='History file stream (default is .mom6.h.native.????-??.nc)')
+    parser.add_argument('-s', '--stream', type=str, default='.mom6.h.native.*.nc', help='History file stream (default is .mom6.h.native.*.nc)')
     parser.add_argument('-f', '--fname', type=str, default='native', help='Name of the history file stream (default is native)')
     parser.add_argument('-sd', '--start_date', type=str, default='', help='Start date for averaging (YYYY-MM).')
     parser.add_argument('-ed', '--end_date', type=str, default='', help='End date for averaging (YYYY-MM).')
@@ -47,10 +47,10 @@ def submit_pbs_script(var, stream, fname):
     #PBS -o {fname}/{fname}_{var}.o
     #PBS -j oe
 
-    source ~/.bashrc
-    conda activate /glade/work/gmarques/conda-envs/mom6-tools
+    module load conda
+    conda activate mom6-tools
 
-    compute_basin_reductions.py diag_config.yml -v {var} -s {stream} -f {fname}
+    mom6-tools_compute_basin_reductions diag_config.yml -v {var} -s {stream} -f {fname}
     """)
 
     # Create the directory if it does not exist
@@ -182,11 +182,7 @@ def main():
     args.static = args.casename+config['Fnames']['static']
 
     # read grid info
-    geom_file = OUTDIR+'/'+args.geom
-    if os.path.exists(geom_file):
-      grd = MOM6grid(OUTDIR+'/'+args.static, geom_file, xrformat=True)
-    else:
-      grd = MOM6grid(OUTDIR+'/'+args.static, xrformat=True)
+    grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom, xrformat=True)
 
     try:
       area = xr.where(grd.wet == 1, grd.area_t, 0.)

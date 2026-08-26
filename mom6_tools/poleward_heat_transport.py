@@ -8,6 +8,7 @@ from datetime import datetime, date
 import xarray as xr
 from mom6_tools.jobqueue import get_cluster
 from mom6_tools import m6plot
+from mom6_tools.DiagsCase import DiagsCase
 from mom6_tools.m6toolbox import genBasinMasks, weighted_temporal_mean_vars, add_global_attrs
 from mom6_tools.m6toolbox import cime_xmlquery
 from mom6_tools.MOM6grid import MOM6grid
@@ -37,12 +38,11 @@ def main(stream=False):
   if not os.path.isdir('PNG/HT'):
     print('Creating a directory to place figures (PNG/HT)... \n')
     os.system('mkdir -p PNG/HT')
-  if not os.path.isdir('ncfiles'):
-    print('Creating a directory to store netcdf files (ncfiles)... \n')
-    os.system('mkdir ncfiles')
 
   # Read in the yaml file
   diag_config_yml = yaml.load(open(args.diag_config_yml_path,'r'), Loader=yaml.Loader)
+  dcase = DiagsCase(diag_config_yml['Case'])
+  ocn_diag_root = dcase.create_output_dir()
 
   caseroot = diag_config_yml['Case']['CASEROOT']
   args.casename = cime_xmlquery(caseroot, 'CASE')
@@ -70,11 +70,8 @@ def main(stream=False):
   args.savefigs = False
 
   # read grid info
-  geom_file = OUTDIR+'/'+args.geom
-  if os.path.exists(geom_file):
-    grd = MOM6grid(OUTDIR+'/'+args.static, geom_file)
-  else:
-    grd = MOM6grid(OUTDIR+'/'+args.static)
+  grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom)
+  
   try:
     depth = grd.depth_ocean
   except:
@@ -137,25 +134,23 @@ def main(stream=False):
   ds_mean = ds_ann.mean('time').load()
   print('Time elasped: ', datetime.now() - startTime)
 
-  print('Extract time series at 26.5 (Atlantic)...')
+  print('Extracting time series (Global and Atlantic)...')
   startTime = datetime.now()
-  # Heat Transport Time Series at 26.5°N (Atlantic)
-  ds_atl_ts =  (ds*basin_code_xr.sel(region='AtlanticOcean').rename({'yh':'yq'})).sel(yq=26.5,
-                method='nearest').sum('xh').drop(['yq', 'region'])
-  # Build a rename mapping
-  rename_dict = {var: f"{var}_rapid" for var in ds_atl_ts.data_vars}
-  # Apply renaming
-  ds_atl_ts = ds_atl_ts.rename(rename_dict)
-  print('Time elasped: ', datetime.now() - startTime)
 
-  print('Extract time series at the Equator (Global and Atlantic)...')
-  startTime = datetime.now()
   # Heat Transport Time Series at the Equator (Global)
   ds_global_eq_ts =  ds.sel(yq=0.0, method='nearest').sum('xh').drop('yq')
   # Build a rename mapping
   rename_dict = {var: f"{var}_global_eq" for var in ds_global_eq_ts.data_vars}
   # Apply renaming
   ds_global_eq_ts = ds_global_eq_ts.rename(rename_dict)
+
+  # Heat Transport Time Series at 60S (Global)
+  ds_global_60S_ts =  ds.sel(yq=-60.0, method='nearest').sum('xh').drop('yq')
+  # Build a rename mapping
+  rename_dict = {var: f"{var}_global_60S" for var in ds_global_60S_ts.data_vars}
+  # Apply renaming
+  ds_global_60S_ts = ds_global_60S_ts.rename(rename_dict)
+
   # Heat Transport Time Series at the Equator (Atlantic)
   ds_atl_eq_ts =  (ds*basin_code_xr.sel(region='AtlanticOcean').rename({'yh':'yq'})).sel(yq=0.0,
                   method='nearest').sum('xh').drop(['yq','region'])
@@ -163,17 +158,35 @@ def main(stream=False):
   rename_dict = {var: f"{var}_atl_eq" for var in ds_atl_eq_ts.data_vars}
   # Apply renaming
   ds_atl_eq_ts = ds_atl_eq_ts.rename(rename_dict)
+
+  # Heat Transport Time Series at 26.5°N (Atlantic)
+  ds_atl_ts =  (ds*basin_code_xr.sel(region='AtlanticOcean').rename({'yh':'yq'})).sel(yq=26.5,
+                method='nearest').sum('xh').drop(['yq', 'region'])
+  # Build a rename mapping
+  rename_dict = {var: f"{var}_rapid" for var in ds_atl_ts.data_vars}
+  # Apply renaming
+  ds_atl_ts = ds_atl_ts.rename(rename_dict)
+
+  # Heat Transport Time Series at 75N (Atlantic)
+  ds_atl_75N_ts =  (ds*basin_code_xr.sel(region='AtlanticOcean').rename({'yh':'yq'})).sel(yq=75.0,
+                  method='nearest').sum('xh').drop(['yq','region'])
+  # Build a rename mapping
+  rename_dict = {var: f"{var}_atl_75N" for var in ds_atl_75N_ts.data_vars}
+  # Apply renaming
+  ds_atl_75N_ts = ds_atl_75N_ts.rename(rename_dict)
+
   print('Time elasped: ', datetime.now() - startTime)
 
   # save time series
   # Merge along time dimension
-  ds_ts = xr.merge([ds_atl_ts, ds_atl_eq_ts, ds_global_eq_ts])
+  ds_ts = xr.merge([ds_atl_ts, ds_atl_eq_ts, ds_global_eq_ts, ds_atl_75N_ts, ds_global_60S_ts])
   varName = 'T_ady_2d'
   print('Saving time series...')
-  attrs = {'description': 'Time series of poleward heat transport by components at 26.5 N (Atlantic) \
-           and Equator (Global and Atlantic).','units': ds[varName].units, 'casename': args.casename}
+  attrs = {'description': 'Time series of poleward heat transport by components at Eq., 26.5 N and 75N (Atlantic) '
+                          'and Eq. and 60S (Global).',
+                          'units': ds[varName].units, 'casename': args.casename}
   add_global_attrs(ds_ts,attrs)
-  ds_ts.to_netcdf('ncfiles/'+args.casename+'_heat_transport_ts.nc')
+  ds_ts.to_netcdf(ocn_diag_root+'/'+args.casename+'_heat_transport_ts.nc')
 
   if parallel:
     print('Releasing workers...')
@@ -184,7 +197,7 @@ def main(stream=False):
        'start_date': args.start_date, 'end_date': args.end_date, 'casename': args.casename}
   add_global_attrs(ds_mean,attrs)
 
-  ds_mean.to_netcdf('ncfiles/'+args.casename+'_heat_transport.nc')
+  ds_mean.to_netcdf(ocn_diag_root+'/'+args.casename+'_heat_transport.nc')
   # create a ndarray subclass
   class C(np.ndarray): pass
 

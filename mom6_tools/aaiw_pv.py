@@ -9,6 +9,7 @@ import xarray as xr
 from mom6_tools.jobqueue import get_cluster
 import momlevel as ml
 from mom6_tools import m6plot
+from mom6_tools.DiagsCase import DiagsCase
 from mom6_tools.m6toolbox import genBasinMasks
 from mom6_tools.m6toolbox import weighted_temporal_mean_vars
 from mom6_tools.m6toolbox import add_global_attrs
@@ -48,12 +49,11 @@ def main(stream=False):
   if not os.path.isdir('PNG/AAIW_PV'):
     print('Creating a directory to place figures (PNG/AAIW_PV)... \n')
     os.system('mkdir -p PNG/AAIW_PV')
-  if not os.path.isdir('ncfiles'):
-    print('Creating a directory to store netcdf files (ncfiles)... \n')
-    os.system('mkdir ncfiles')
 
   # Read in the yaml file
   diag_config_yml = yaml.load(open(args.diag_config_yml_path,'r'), Loader=yaml.Loader)
+  dcase = DiagsCase(diag_config_yml['Case'])
+  ocn_diag_root = dcase.create_output_dir()
 
   caseroot = diag_config_yml['Case']['CASEROOT']
   args.casename = cime_xmlquery(caseroot, 'CASE')
@@ -79,11 +79,7 @@ def main(stream=False):
   args.outdir = 'PNG/AAIW_PV/'
 
   # read grid info
-  geom_file = OUTDIR+'/'+args.geom
-  if os.path.exists(geom_file):
-    grd = MOM6grid(OUTDIR+'/'+args.static, geom_file, xrformat=True)
-  else:
-    grd = MOM6grid(OUTDIR+'/'+args.static, xrformat=True)
+  grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom, xrformat=True)
 
   try:
     depth = grd.depth_ocean
@@ -173,7 +169,7 @@ def main(stream=False):
   add_global_attrs(pv,attrs)
   pv = pv.rename('pv')
   print('Saving netCDF files...')
-  pv.to_netcdf('ncfiles/'+str(args.casename)+'_AAIW_PV.nc')
+  pv.to_netcdf(ocn_diag_root+'/'+str(args.casename)+'_AAIW_PV.nc')
 
   if parallel:
     print('Releasing workers...')
