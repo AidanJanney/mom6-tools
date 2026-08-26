@@ -195,7 +195,7 @@ def main():
 
   # --- Colour map matching the observation panels (Bilo & Johns 2020) ---
   boundaries     = np.linspace(-0.3, 0.3, 50)
-  cmap_seismic   = plt.cm.get_cmap('seismic', len(boundaries))
+  cmap_seismic   = plt.get_cmap('seismic', len(boundaries))
   colors         = list(cmap_seismic(np.arange(len(boundaries))))
   cmap_custom    = mpl.colors.ListedColormap(colors, '')
   cmap_custom.set_over(colors[-1])
