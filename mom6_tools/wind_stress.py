@@ -109,30 +109,6 @@ def driver(args):
   # Set up parallel processing
   parallel, cluster, client = get_cluster(nw, args=args, config=jobqueue_config)
 
-  fname = args.file_name
-  if not os.path.isdir('ncfiles'):
-    print('Creating a directory to place netCDF files (ncfiles)... \n')
-    os.system('mkdir ncfiles')
-
-  # Read in the yaml file
-  diag_config_yml = yaml.load(open(args.diag_config_yml_path,'r'), Loader=yaml.Loader)
-
-  # Create the case instance
-  dcase = DiagsCase(diag_config_yml['Case'])
-  RUNDIR = dcase.get_value('RUNDIR')
-  args.casename = dcase.casename
-  print('Run directory is:', RUNDIR)
-  print('Casename is:', args.casename)
-  print('Number of workers: ', nw)
-
-  # set avg dates
-  avg = diag_config_yml['Avg']
-  if not args.start_date : args.start_date = avg['start_date']
-  if not args.end_date : args.end_date = avg['end_date']
-
-  # read grid info
-  grd = MOM6grid(RUNDIR+'/'+args.casename+'.mom6.static.nc')
-
   # Open dataset
   print('Opening dataset...')
   startTime = datetime.now()
