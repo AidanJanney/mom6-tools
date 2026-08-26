@@ -37,7 +37,8 @@ def parseCommandLine():
                       help='''Name of the observation-based MLD dataset in the oce-catalog. Default is mld-deboyer-2023-tx2_3v2''')
   parser.add_argument('-nw','--number_of_workers',  type=int, default=0,
                       help='''Number of workers to use (default=0, serial job).''')
-  parser.add_argument('--savefigs', action='store_true', default=False,)
+  parser.add_argument('--savefigs', action='store_true', default=None,
+                      help='''Save figures (default is to use value set in diag_config_yml_path)''')
   parser.add_argument('-debug',   help='''Add priting statements for debugging purposes''', action="store_true")
   optCmdLineArgs = parser.parse_args()
   return optCmdLineArgs
@@ -69,12 +70,12 @@ def driver(args):
   avg = diag_config_yml['Avg']
   if not args.start_date : args.start_date = avg['start_date']
   if not args.end_date : args.end_date = avg['end_date']
-  args.sfc = args.casename +diag_config_yml['Fnames']['sfc']
+  args.sfc = args.casename + diag_config_yml['Fnames']['sfc']
   args.native = args.casename + diag_config_yml['Fnames']['native']
   args.static = args.casename + diag_config_yml['Fnames']['static']
   args.geom = args.casename + diag_config_yml['Fnames']['geom']
   args.label = diag_config_yml['Case']['SNAME']
-  if not args.savefigs: args.savefigs = diag_config_yml['Misc']['savefigs']
+  if args.savefigs is None: args.savefigs = diag_config_yml['Misc']['savefigs']
 
   # read grid info
   grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom)
