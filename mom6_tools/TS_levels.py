@@ -8,7 +8,7 @@ import pandas as pd
 from collections import OrderedDict
 import dask
 from datetime import datetime, date
-from mom6_tools.jobqueue import get_cluster
+from mom6_tools.jobqueue import add_jobqueue_args, get_cluster, release_workers
 from mom6_tools.m6toolbox import add_global_attrs, genBasinMasks, weighted_temporal_mean_vars
 from mom6_tools.m6toolbox import cime_xmlquery
 from mom6_tools.m6plot import xycompare, polarcomparison, chooseColorLevels
@@ -38,6 +38,7 @@ def parseCommandLine():
                       help='''Name of observational product in the oce-catalog  \
                               to compare against. Default is woa-2018-tx2_3v2-annual-all''')
   parser.add_argument('-debug',   help='''Add priting statements for debugging purposes''', action="store_true")
+  add_jobqueue_args(parser)
   optCmdLineArgs = parser.parse_args()
   return optCmdLineArgs
 
@@ -97,7 +98,8 @@ def driver(args):
   obs_temp = obs.thetao
   obs_salt = obs.so
 
-  parallel, cluster, client = get_cluster(nw)
+  parallel, cluster, client = get_cluster(nw, args=args,
+                                          config=diag_config_yml.get('Jobqueue'))
 
   print('Reading dataset...')
   startTime = datetime.now()
@@ -269,9 +271,7 @@ def driver(args):
   ds_so.to_netcdf(ocn_diag_root+'/'+str(args.casename)+'_so_time_mean.nc')
   print('Time elasped: ', datetime.now() - startTime)
 
-  if parallel:
-    print('\n Releasing workers...')
-    client.close(); cluster.close()
+  release_workers(parallel, cluster, client)
 
   print('Global plots...')
   try:

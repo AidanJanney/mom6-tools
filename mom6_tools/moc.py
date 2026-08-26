@@ -7,7 +7,7 @@ import warnings, dask, intake
 from datetime import datetime
 import xarray as xr
 from mom6_tools.m6toolbox import cime_xmlquery
-from mom6_tools.jobqueue import get_cluster
+from mom6_tools.jobqueue import add_jobqueue_args, get_cluster, release_workers
 from mom6_tools import m6plot
 from mom6_tools  import m6toolbox
 from mom6_tools.MOM6grid import MOM6grid
@@ -27,6 +27,7 @@ def options():
                       help='''Number of workers to use (default=2).''')
   parser.add_argument('-debug',   help='''Add priting statements for debugging purposes''',
                       action="store_true")
+  add_jobqueue_args(parser)
   cmdLineArgs = parser.parse_args()
   return cmdLineArgs
 
@@ -78,7 +79,8 @@ def main():
   basin_code = m6toolbox.genBasinMasks(grd.geolon, grd.geolat, depth)
   basin_code_xr = m6toolbox.genBasinMasks(grd.geolon, grd.geolat, depth, verbose=False, xda=True)
 
-  parallel, cluster, client = get_cluster(nw)
+  parallel, cluster, client = get_cluster(nw, args=args,
+                                          config=diag_config_yml.get('Jobqueue'))
 
   print('Reading {} dataset...'.format(args.monthly))
   startTime = datetime.now()
@@ -279,9 +281,7 @@ def main():
   moc['moc_70S'].data    = moc_70S
   moc['moc_35S'].data    = moc_35S
 
-  if parallel:
-    print('Releasing workers ...')
-    client.close(); cluster.close()
+  release_workers(parallel, cluster, client)
 
   print('Plotting...')
 

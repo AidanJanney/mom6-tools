@@ -10,7 +10,7 @@ import warnings, os, yaml, argparse
 import pandas as pd
 import dask, intake
 from datetime import datetime, date
-from mom6_tools.jobqueue import get_cluster
+from mom6_tools.jobqueue import add_jobqueue_args, get_cluster, release_workers
 from mom6_tools.MOM6grid import MOM6grid
 from mom6_tools.DiagsCase import DiagsCase
 from mom6_tools.m6toolbox import weighted_temporal_mean, mom6_latlon2ij, cime_xmlquery
@@ -34,6 +34,7 @@ def parseCommandLine():
     parser.add_argument('-nw','--number_of_workers',  type=int, default=0,
                         help='''Number of workers to use (default=0, serial job).''')
     parser.add_argument('-debug',   help='''Add priting statements for debugging purposes''', action="store_true")
+    add_jobqueue_args(parser)
     optCmdLineArgs = parser.parse_args()
     return optCmdLineArgs
 
@@ -85,7 +86,8 @@ def driver(args):
     # load obs
     path_obs = '/glade/campaign/cgd/oce/datasets/obs/TAO_adcp_mon'
 
-    parallel, cluster, client = get_cluster(nw)
+    parallel, cluster, client = get_cluster(nw, args=args,
+                                            config=diag_config_yml.get('Jobqueue'))
 
     print('Reading monthly dataset ...')
     startTime = datetime.now()
@@ -116,9 +118,7 @@ def driver(args):
     uo_mon_clim = ds_sel['uo'].transpose().groupby('time.month').mean('time').squeeze().compute()
     print('Time elasped: ', datetime.now() - startTime)
 
-    if parallel:
-        print('\n Releasing workers...')
-        client.close(); cluster.close()
+    release_workers(parallel, cluster, client)
 
     freq_mooring = 'mon'
     pos_mooring = ['0n147e', '0n156e', '0n165e', '0n170w', '0n140w', '0n110w', # Pacific

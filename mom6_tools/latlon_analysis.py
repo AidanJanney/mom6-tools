@@ -12,7 +12,7 @@ from mom6_tools import m6plot
 from mom6_tools.MOM6grid import MOM6grid
 from mom6_tools.m6toolbox import weighted_temporal_mean_vars
 from mom6_tools.m6toolbox import cime_xmlquery
-from mom6_tools.jobqueue import get_cluster
+from mom6_tools.jobqueue import add_jobqueue_args, get_cluster, release_workers
 
 class MyError(Exception):
   """
@@ -63,6 +63,10 @@ def parseCommandLine():
   parser.add_argument('-time_series', help='''If true, plot time-series of area-averaged statistics''',
       action="store_true")
 
+  parser.add_argument('-nw','--number_of_workers', type=int, default=0,
+      help='''Number of workers to use (default=0, serial job).''')
+
+  add_jobqueue_args(parser)
   optCmdLineArgs = parser.parse_args()
   return optCmdLineArgs
 
@@ -94,7 +98,8 @@ def driver(args):
   grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom)
 
   variables = args.variables.split(',')
-  time_mean_latlon(args,grd,variables)
+  time_mean_latlon(args, grd, variables,
+                   jobqueue_config=diag_config_yml.get('Jobqueue'))
 
   return
 
@@ -123,9 +128,10 @@ def plot_area_ave_stats(ds, var, args, aspect=[16,9], resolution=576, debug=Fals
   return
 
 # -- time-average 2D latlon fields and call plotting function
-def time_mean_latlon(args, grd, variables=[]):
+def time_mean_latlon(args, grd, variables=[], jobqueue_config=None):
 
-  parallel, cluster, client = get_cluster(args.nw)
+  parallel, cluster, client = get_cluster(args.number_of_workers, args=args,
+                                          config=jobqueue_config)
 
   ds = xr.open_mfdataset(args.infile, \
        parallel=parallel, data_vars='minimal', chunks={'time': 12},\
@@ -188,8 +194,7 @@ def time_mean_latlon(args, grd, variables=[]):
       #if args.to_netcdf:
       # save in a netcdf file
       #ds.to_netcdf('ncfiles/'+args.case_name+'_stats.nc')
-  if parallel:
-    client.close(); cluster.close()
+  release_workers(parallel, cluster, client)
 
   return
 

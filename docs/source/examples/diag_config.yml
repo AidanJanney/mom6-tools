@@ -48,20 +48,18 @@ Transports:
 # path to ocean-related datasets catalog
 oce_cat: /glade/u/home/gmarques/libs/oce-catalogs/reference-datasets.yml
 
-# Optional: dask_jobqueue.PBSCluster keyword arguments, forwarded by
-# mom6_tools.m6toolbox.request_workers()/mom6_tools.jobqueue.get_cluster()
-# to control worker resources on this system. Omit this section to fall
-# back on dask's own configuration discovery (e.g.
-# ~/.config/dask/jobqueue.yaml). See
-# https://jobqueue.dask-jobqueue.org/en/latest/configuration.html
+# dask_jobqueue cluster settings.
+# Paths below are used verbatim -- edit <username> to your own username.
+# See https://jobqueue.dask.org/en/latest/configuration.html and mom6_tools.jobqueue
 Jobqueue:
+  cluster_class: 'PBSCluster'
   cores: 1
-  memory: '4GiB'
+  memory: '4GB'
   processes: 1
-  interface: 'hsn0'
-  queue: 'develop'
-  walltime: '01:00:00'
+  interface: 'ext'
+  queue: 'casper'
+  walltime: '02:00:00'
   resource_spec: 'select=1:ncpus=1:mem=4GB'
-  log_directory: '/glade/derecho/scratch/{user}/dask/logs'
-  local_directory: '/glade/derecho/scratch/{user}/dask/local-dir'
+  log_directory: '/glade/derecho/scratch/<username>/dask/logs'
+  local_directory: '/glade/derecho/scratch/<username>/dask/local-dir'
 

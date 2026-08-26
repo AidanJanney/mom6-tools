@@ -25,7 +25,7 @@ import warnings, os, yaml, argparse
 import pandas as pd
 import dask
 from datetime import datetime, date
-from mom6_tools.jobqueue import get_cluster
+from mom6_tools.jobqueue import add_jobqueue_args, get_cluster, release_workers
 from mom6_tools.DiagsCase import DiagsCase
 from mom6_tools.m6toolbox import add_global_attrs
 from mom6_tools.m6plot import xycompare, xyplot
@@ -57,6 +57,7 @@ def parseCommandLine():
                       help='''Label for the case (used in plot titles).''')
   parser.add_argument('-nw','--number_of_workers',  type=int, default=0,
                       help='''Number of workers to use (default=0, serial job).''')
+  add_jobqueue_args(parser)
   optCmdLineArgs = parser.parse_args()
   return optCmdLineArgs
 
@@ -67,9 +68,11 @@ def driver(args):
   os.makedirs(args.plot_dir, exist_ok=True)
 
   # Determine if input is a yaml config or a file glob pattern
+  jobqueue_config = None
   if args.input_path.endswith('.yml') or args.input_path.endswith('.yaml'):
     # yaml-based workflow
     diag_config_yml = yaml.load(open(args.input_path,'r'), Loader=yaml.Loader)
+    jobqueue_config = diag_config_yml.get('Jobqueue')
     caseroot = diag_config_yml['Case']['CASEROOT']
     casename = cime_xmlquery(caseroot, 'CASE')
     DOUT_S = cime_xmlquery(caseroot, 'DOUT_S')
@@ -104,7 +107,7 @@ def driver(args):
   print(f'Number of workers: {nw}')
 
   # Set up parallel processing
-  parallel, cluster, client = get_cluster(nw)
+  parallel, cluster, client = get_cluster(nw, args=args, config=jobqueue_config)
 
   fname = args.file_name
   if not os.path.isdir('ncfiles'):
@@ -234,9 +237,7 @@ def driver(args):
       zero_contour=True
   )
 
-  if parallel:
-    print('Releasing workers...')
-    client.close(); cluster.close()
+  release_workers(parallel, cluster, client)
 
   print(f'{os.path.basename(__file__)} completed successfully!')
   return
