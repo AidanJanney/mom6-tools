@@ -34,6 +34,7 @@ are keys in the Jobqueue: block that are not in JOBQUEUE_CONFIG_KEYS.
 """
 
 import warnings
+import argparse
 
 # Settings shared by the diag_config.yml `Jobqueue:` block, the CLI flags
 # from add_jobqueue_args(), and the kwargs accepted by dask_jobqueue cluster
@@ -110,17 +111,13 @@ def cluster_class_from_name(cluster_class):
         "dask.distributed.LocalCluster, a class name string, or None; "
         "got {!r}.".format(cluster_class))
 
-  dask_jobqueue = None
-  try:
-    import dask_jobqueue
-  except ImportError:
-    pass
-
-  if dask_jobqueue is None:
-    raise ValueError(
-        "Cannot resolve cluster_class {!r}: dask_jobqueue is not installed. "
-        "Install it (e.g. `conda install dask-jobqueue`), or use "
-        "'LocalCluster' to run workers on this node without submitting batch "
+  try:  
+    import dask_jobqueue  
+  except ImportError:  
+    raise ValueError(  
+        "Cannot resolve cluster_class {!r}: dask_jobqueue is not installed. "  
+        "Install it (e.g. `conda install dask-jobqueue`), or use "  
+        "'LocalCluster' to run workers on this node without submitting batch "  
         "jobs.".format(cluster_class))
 
   resolved_class = getattr(dask_jobqueue, cluster_class, None)
@@ -136,7 +133,7 @@ def cluster_class_from_name(cluster_class):
       .format(cluster_class))
 
 
-def resolve_jobqueue_kwargs(cluster_class, args=None, config=None):
+def resolve_jobqueue_kwargs(cluster_class, args={}, config={}):
   '''Merge CLI and YAML resource kwargs for an already-resolved
   dask_jobqueue cluster_class.
 
@@ -165,35 +162,41 @@ def resolve_jobqueue_kwargs(cluster_class, args=None, config=None):
         "classes (e.g. PBSCluster, SLURMCluster), got {!r}. For a plain "
         "dask.distributed.LocalCluster, pass kwargs directly to "
         "get_cluster() instead.".format(cluster_class))
+    
+  if isinstance(args, argparse.Namespace):
+      args = vars(args)
+  elif not isinstance(args, dict):
+    raise ValueError(f"args must be an argparse.Namespace or dict, got {type(args).__name__}.")
 
-  config = config or {}
   kwargs = {}
   for key in JOBQUEUE_KEYS:
-    cli_value = getattr(args, key, None) if args is not None else None
-    if cli_value is not None:
-      kwargs[key] = cli_value
-      continue
-    if config.get(key) is not None:
-      kwargs[key] = config[key]
+    cli_value = args.get(key)
+    if cli_value is not None:  
+      kwargs[key] = cli_value  
+    else:  
+      kwargs[key] = config.get(key) 
   return kwargs
 
 
-def _jobqueue_settings_given(args=None, config=None):
+def _jobqueue_settings_given(args={}, config={}):
   '''Names of the JOBQUEUE_KEYS settings actually supplied via CLI or YAML.
 
   Used to warn when resource settings were given but the resolved cluster
   class is not a dask_jobqueue one and so will ignore them.
   '''
-  config = config or {}
+  if isinstance(args, argparse.Namespace):
+      args = vars(args)
+  elif not isinstance(args, dict):
+    raise ValueError(f"args must be an argparse.Namespace or dict, got {type(args).__name__}.")
+  
   given = []
   for key in JOBQUEUE_KEYS:
-    cli_value = getattr(args, key, None) if args is not None else None
-    if cli_value is not None or config.get(key) is not None:
-      given.append(key)
+    if args.get(key) is not None or config.get(key) is not None:  
+      given.append(key) 
   return given
 
 
-def get_cluster(nw, cluster_class=None, args=None, config=None, **kwargs):
+def get_cluster(nw, cluster_class=None, args={}, config={}, **kwargs):
   '''Request nw dask workers, or run in serial if nw <= 1.
 
   This is the single entry point for launching a dask cluster, for both
@@ -239,9 +242,13 @@ def get_cluster(nw, cluster_class=None, args=None, config=None, **kwargs):
   if nw <= 1:
     print('No workers requested \n')
     return False, None, None
+  
+  if isinstance(args, argparse.Namespace):
+    args = vars(args)
+  elif not isinstance(args, dict):
+    raise ValueError(f"args must be an argparse.Namespace or dict, got {type(args).__name__}.")
 
   # 1. Collect cluster_class and config from every source.
-  config = config or {}
   unknown = [key for key in config if key not in JOBQUEUE_CONFIG_KEYS]
   if unknown:
     warnings.warn(
@@ -249,9 +256,7 @@ def get_cluster(nw, cluster_class=None, args=None, config=None, **kwargs):
         "are: {}.".format(', '.join(sorted(unknown)),
                           ', '.join(JOBQUEUE_CONFIG_KEYS)))
   if cluster_class is None:
-    cluster_class = getattr(args, 'cluster_class', None)
-  if cluster_class is None:
-    cluster_class = config.get('cluster_class')
+    cluster_class = args.get('cluster_class')
 
   # 2. Process: resolve the cluster class and, for a dask_jobqueue class,
   # its resource kwargs.
