@@ -75,7 +75,7 @@ def driver(args):
   args.static = args.casename + diag_config_yml['Fnames']['static']
   args.geom = args.casename + diag_config_yml['Fnames']['geom']
   args.label = diag_config_yml['Case']['SNAME']
-  if args.savefigs is None: args.savefigs = diag_config_yml['Misc']['savefigs']
+  if args.savefigs is None: args.savefigs = diag_config_yml.get('Misc',{}).get('savefigs',False) 
 
   # read grid info
   grd = MOM6grid(OUTDIR+'/'+args.static, OUTDIR+'/'+args.geom)
