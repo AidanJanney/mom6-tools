@@ -28,7 +28,7 @@ def get_parser(description, epilog=None, config=True, dates=True, workers=True):
   parser = argparse.ArgumentParser(description=description, epilog=epilog)
   if config:
     parser.add_argument('diag_config_yml_path', type=str,
-                        help='''Full path to the yaml file describing the run and diagnostics to be performed.''')
+                        help='''Relative or absolute path to the yaml file describing the run and diagnostics to be performed.''')
   if dates:
     parser.add_argument('-sd', '--start_date', type=str, default='',
                         help='''Start date to compute averages. Default is to use value set in the yaml file.''')
