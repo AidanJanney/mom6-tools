@@ -1,7 +1,7 @@
 import pytest
 
 from mom6_tools.cli import get_parser
-from mom6_tools.jobqueue import resolve_jobqueue_kwargs
+from mom6_tools.jobqueue import JOBQUEUE_CONFIG_KEYS, resolve_jobqueue_kwargs
 
 
 def test_shared_options_parse():
@@ -33,6 +33,13 @@ def test_script_positional_follows_config():
   parser.add_argument('var', type=str)
   args = parser.parse_args(['diag_config.yml', 'thetao'])
   assert (args.diag_config_yml_path, args.var) == ('diag_config.yml', 'thetao')
+
+def test_jobqueue_flags_match_jobqueue_keys():
+  # The flags are defined in cli.py but read by jobqueue.py via JOBQUEUE_CONFIG_KEYS.
+  args = vars(get_parser('test', config=False, dates=False).parse_args([]))
+  jobqueue_args = {k: v for k, v in args.items() if k not in ('debug', 'number_of_workers')}
+  assert set(jobqueue_args) == set(JOBQUEUE_CONFIG_KEYS)
+  assert all(v is None for v in jobqueue_args.values())
 
 def test_cli_flags_override_yaml_jobqueue_block():
   dask_jobqueue = pytest.importorskip('dask_jobqueue')
